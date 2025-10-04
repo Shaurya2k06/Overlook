@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 # Overlook - Real-time Collaborative Code Editor
 
 A real-time collaborative code editor with AI assistance, built with React, Node.js, and Socket.IO.
@@ -226,3 +227,7 @@ The project follows clean architecture principles:
 ## License
 
 This project is licensed under the ISC License.
+=======
+# Overlook
+
+>>>>>>> Stashed changes

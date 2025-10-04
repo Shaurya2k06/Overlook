@@ -4,19 +4,18 @@ import { io } from "socket.io-client";
 import axios from "axios";
 import { toast } from "react-toastify";
 import { Copy } from "lucide-react";
-import { 
-  Terminal, 
-  Shield, 
-  Activity, 
-  Users, 
-  Server, 
-  Clock, 
-  Wifi, 
+import {
+  Terminal,
+  Shield,
+  Activity,
+  Users,
+  Server,
+  Clock,
+  Wifi,
   WifiOff,
-
   LogOut,
   Eye,
-  Code
+  Code,
 } from "lucide-react";
 import { FileSystemProvider } from "../contexts/FileSystemContext";
 import CodeEditor from "../components/CodeEditor";
@@ -42,20 +41,20 @@ function Editor() {
   const [_typingUsers, setTypingUsers] = useState(new Set());
   const [currentTime, setCurrentTime] = useState(new Date());
   const [systemSpecs, setSystemSpecs] = useState({
-    platform: '',
+    platform: "",
     cpuCores: 0,
-    totalMemory: 0
+    totalMemory: 0,
   });
   const [realTimeStats, setRealTimeStats] = useState({
     usedMemory: 0,
     connectionLatency: 0,
     downlink: 0,
-    effectiveType: 'unknown'
+    effectiveType: "unknown",
   });
   const [wifiSpeed, setWifiSpeed] = useState({
     download: 0,
     upload: 0,
-    ping: 0
+    ping: 0,
   });
   const [showCursor, setShowCursor] = useState(true);
   const [terminalOutput, setTerminalOutput] = useState([]);
@@ -91,9 +90,11 @@ function Editor() {
   // Get real system information
   const getRealSystemInfo = () => {
     const specs = {
-      platform: navigator.platform || 'Unknown',
-      cpuCores: navigator.hardwareConcurrency || 'Unknown',
-      totalMemory: navigator.deviceMemory ? `${navigator.deviceMemory}GB` : 'Unknown'
+      platform: navigator.platform || "Unknown",
+      cpuCores: navigator.hardwareConcurrency || "Unknown",
+      totalMemory: navigator.deviceMemory
+        ? `${navigator.deviceMemory}GB`
+        : "Unknown",
     };
     setSystemSpecs(specs);
   };
@@ -101,25 +102,25 @@ function Editor() {
   // Get real-time performance data
   const getRealTimeData = () => {
     try {
-      if ('memory' in performance) {
+      if ("memory" in performance) {
         const memInfo = performance.memory;
-        setRealTimeStats(prev => ({
+        setRealTimeStats((prev) => ({
           ...prev,
-          usedMemory: Math.round(memInfo.usedJSHeapSize / 1024 / 1024)
+          usedMemory: Math.round(memInfo.usedJSHeapSize / 1024 / 1024),
         }));
       }
 
       // Get network connection info
-      if ('connection' in navigator) {
+      if ("connection" in navigator) {
         const connection = navigator.connection;
-        setRealTimeStats(prev => ({
+        setRealTimeStats((prev) => ({
           ...prev,
           downlink: connection.downlink || 0,
-          effectiveType: connection.effectiveType || 'unknown'
+          effectiveType: connection.effectiveType || "unknown",
         }));
       }
     } catch (error) {
-      console.log('Performance API not supported');
+      console.log("Performance API not supported");
     }
   };
 
@@ -128,16 +129,19 @@ function Editor() {
     if (navigator.connection) {
       const connection = navigator.connection;
       setWifiSpeed({
-        download: Math.round((connection.downlink || Math.random() * 100) * 10) / 10,
-        upload: Math.round((connection.downlink || Math.random() * 50) * 0.8 * 10) / 10,
-        ping: Math.round(20 + Math.random() * 30)
+        download:
+          Math.round((connection.downlink || Math.random() * 100) * 10) / 10,
+        upload:
+          Math.round((connection.downlink || Math.random() * 50) * 0.8 * 10) /
+          10,
+        ping: Math.round(20 + Math.random() * 30),
       });
     } else {
       // Fallback simulation
       setWifiSpeed({
         download: Math.round((50 + Math.random() * 100) * 10) / 10,
         upload: Math.round((20 + Math.random() * 50) * 10) / 10,
-        ping: Math.round(15 + Math.random() * 25)
+        ping: Math.round(15 + Math.random() * 25),
       });
     }
   };
@@ -158,19 +162,19 @@ function Editor() {
     newSocket.on("connect", () => {
       console.log("Connected to server");
       setIsConnected(true);
-      addToAuditLog("WebSocket connection established", 'success');
-      addToAuditLog("Encryption protocol activated", 'info');
+      addToAuditLog("WebSocket connection established", "success");
+      addToAuditLog("Encryption protocol activated", "info");
     });
 
     newSocket.on("disconnect", () => {
       console.log("Disconnected from server");
       setIsConnected(false);
-      addToAuditLog("Connection lost - attempting reconnection", 'warning');
+      addToAuditLog("Connection lost - attempting reconnection", "warning");
     });
 
     newSocket.on("reconnect", () => {
       console.log("Reconnected to server");
-      addToAuditLog("Connection restored successfully", 'success');
+      addToAuditLog("Connection restored successfully", "success");
       setIsConnected(true);
       // Automatically rejoin the room after reconnection
       if (roomId && user.id) {
@@ -191,7 +195,10 @@ function Editor() {
       setJoinError(null);
 
       // Show success notification in terminal
-      addTerminalNotification(`Successfully joined room ${data.roomId}`, 'success');
+      addTerminalNotification(
+        `Successfully joined room ${data.roomId}`,
+        "success"
+      );
 
       // Sync file system data if available
       if (data.files || data.folders) {
@@ -220,7 +227,7 @@ function Editor() {
       ]);
 
       // Show user joined notification in terminal
-      addTerminalNotification(`${data.username} joined the room`, 'info');
+      addTerminalNotification(`${data.username} joined the room`, "info");
     });
 
     newSocket.on("user-left", (data) => {
@@ -228,7 +235,7 @@ function Editor() {
       setParticipants((prev) => prev.filter((p) => p.userId !== data.userId));
 
       // Show user left notification in terminal
-      addTerminalNotification(`${data.username} left the room`, 'warning');
+      addTerminalNotification(`${data.username} left the room`, "warning");
     });
 
     newSocket.on("user-reconnected", (data) => {
@@ -259,7 +266,10 @@ function Editor() {
       });
 
       // Show user reconnected notification in terminal
-      addTerminalNotification(`${data.username} reconnected to the room`, 'info');
+      addTerminalNotification(
+        `${data.username} reconnected to the room`,
+        "info"
+      );
     });
 
     newSocket.on("error", (error) => {
@@ -287,7 +297,7 @@ function Editor() {
 
         // Show typing notification in terminal (only for first time typing)
         if (!prev.has(data.username)) {
-          addTerminalNotification(`${data.username} is typing...`, 'info');
+          addTerminalNotification(`${data.username} is typing...`, "info");
         }
 
         return newSet;
@@ -305,37 +315,52 @@ function Editor() {
     // File operation events with terminal notifications
     newSocket.on("file-created", (data) => {
       if (data.createdBy !== user.username) {
-        addTerminalNotification(`${data.createdBy} created file: ${data.fileData.name}`, 'success');
+        addTerminalNotification(
+          `${data.createdBy} created file: ${data.fileData.name}`,
+          "success"
+        );
       }
     });
 
     newSocket.on("folder-created", (data) => {
       if (data.createdBy !== user.username) {
-        addTerminalNotification(`${data.createdBy} created folder: ${data.folderData.name}`, 'success');
+        addTerminalNotification(
+          `${data.createdBy} created folder: ${data.folderData.name}`,
+          "success"
+        );
       }
     });
 
     newSocket.on("file-deleted", (data) => {
       if (data.deletedBy !== user.username) {
-        addTerminalNotification(`${data.deletedBy} deleted a file`, 'warning');
+        addTerminalNotification(`${data.deletedBy} deleted a file`, "warning");
       }
     });
 
     newSocket.on("folder-deleted", (data) => {
       if (data.deletedBy !== user.username) {
-        addTerminalNotification(`${data.deletedBy} deleted a folder`, 'warning');
+        addTerminalNotification(
+          `${data.deletedBy} deleted a folder`,
+          "warning"
+        );
       }
     });
 
     newSocket.on("file-renamed", (data) => {
       if (data.renamedBy !== user.username) {
-        addTerminalNotification(`${data.renamedBy} renamed a file to: ${data.newName}`, 'info');
+        addTerminalNotification(
+          `${data.renamedBy} renamed a file to: ${data.newName}`,
+          "info"
+        );
       }
     });
 
     newSocket.on("folder-renamed", (data) => {
       if (data.renamedBy !== user.username) {
-        addTerminalNotification(`${data.renamedBy} renamed a folder to: ${data.newName}`, 'info');
+        addTerminalNotification(
+          `${data.renamedBy} renamed a folder to: ${data.newName}`,
+          "info"
+        );
       }
     });
 
@@ -365,7 +390,7 @@ function Editor() {
 
     // Cursor blink effect
     const cursorInterval = setInterval(() => {
-      setShowCursor(prev => !prev);
+      setShowCursor((prev) => !prev);
     }, 500);
 
     return () => {
@@ -378,16 +403,28 @@ function Editor() {
   // Join room function
   const joinRoom = useCallback(
     async (roomIdToJoin) => {
+      console.log("joinRoom called with roomIdToJoin:", roomIdToJoin);
+      if (!roomIdToJoin) {
+        console.error("joinRoom called with undefined roomIdToJoin");
+        setJoinError("Room ID is required");
+        setIsJoining(false);
+        return;
+      }
+
       try {
         setIsJoining(true);
         setJoinError(null);
 
+        console.log(
+          "Making API call to join hybrid room:",
+          `${API_BASE_URL}/hybrid-rooms/join/${roomIdToJoin}`
+        );
         const response = await axios.post(
-          `${API_BASE_URL}/rooms/join/${roomIdToJoin}`,
+          `${API_BASE_URL}/hybrid-rooms/join/${roomIdToJoin}`,
           {
             userId: user.id,
             username: user.username,
-          },
+          }
         );
 
         if (response.data.success && socket) {
@@ -403,18 +440,31 @@ function Editor() {
         setJoinError(
           error.response?.data?.message ||
             error.message ||
-            "Failed to join room",
+            "Failed to join room"
         );
         setIsJoining(false);
       }
     },
-    [user.id, user.username, socket],
+    [user.id, user.username, socket]
   );
 
   // Auto-join room when component mounts
   useEffect(() => {
+    console.log(
+      "Editor useEffect - roomId:",
+      roomId,
+      "socket:",
+      !!socket,
+      "isConnected:",
+      isConnected
+    );
     if (roomId && socket && isConnected) {
+      console.log("Attempting to join room:", roomId);
       joinRoom(roomId);
+    } else if (!roomId) {
+      console.error("No roomId found in URL params");
+      setJoinError("No room ID provided in URL");
+      setIsJoining(false);
     }
   }, [roomId, socket, isConnected, joinRoom, user.id, user.username]);
 
@@ -422,7 +472,7 @@ function Editor() {
   const leaveRoom = async () => {
     if (roomId && socket) {
       try {
-        await axios.post(`${API_BASE_URL}/rooms/leave/${roomId}`, {
+        await axios.post(`${API_BASE_URL}/hybrid-rooms/leave/${roomId}`, {
           userId: user.id,
         });
 
@@ -442,21 +492,27 @@ function Editor() {
   // Handle AI code generation
   const handlePromptSubmit = async (prompt) => {
     if (!roomId) {
-      setTerminalOutput(prev => [...prev, { 
-        id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        type: 'error', 
-        message: 'No room available', 
-        timestamp: new Date().toLocaleTimeString('en-US', { hour12: false })
-      }]);
+      setTerminalOutput((prev) => [
+        ...prev,
+        {
+          id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          type: "error",
+          message: "No room available",
+          timestamp: new Date().toLocaleTimeString("en-US", { hour12: false }),
+        },
+      ]);
       return;
     }
 
-    setTerminalOutput(prev => [...prev, { 
-      id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      type: 'command', 
-      message: `Generating code: ${prompt}`, 
-      timestamp: new Date().toLocaleTimeString('en-US', { hour12: false })
-    }]);
+    setTerminalOutput((prev) => [
+      ...prev,
+      {
+        id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        type: "command",
+        message: `Generating code: ${prompt}`,
+        timestamp: new Date().toLocaleTimeString("en-US", { hour12: false }),
+      },
+    ]);
 
     try {
       // Note: This is a simplified approach - in a real app you'd pass current file content through props
@@ -468,12 +524,17 @@ function Editor() {
 
       if (response.data.success) {
         const generatedCode = response.data.generatedCode;
-        setTerminalOutput(prev => [...prev, { 
-          id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          type: 'success', 
-          message: 'Code generated successfully', 
-          timestamp: new Date().toLocaleTimeString('en-US', { hour12: false })
-        }]);
+        setTerminalOutput((prev) => [
+          ...prev,
+          {
+            id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            type: "success",
+            message: "Code generated successfully",
+            timestamp: new Date().toLocaleTimeString("en-US", {
+              hour12: false,
+            }),
+          },
+        ]);
 
         // Send the generated code to WebSocket for broadcasting
         if (socket) {
@@ -486,12 +547,17 @@ function Editor() {
       }
     } catch (error) {
       console.error("Failed to generate code:", error);
-      setTerminalOutput(prev => [...prev, { 
-        id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        type: 'error', 
-        message: `Failed to generate code: ${error.response?.data?.message || error.message}`, 
-        timestamp: new Date().toLocaleTimeString('en-US', { hour12: false })
-      }]);
+      setTerminalOutput((prev) => [
+        ...prev,
+        {
+          id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          type: "error",
+          message: `Failed to generate code: ${
+            error.response?.data?.message || error.message
+          }`,
+          timestamp: new Date().toLocaleTimeString("en-US", { hour12: false }),
+        },
+      ]);
     }
   };
 
@@ -514,36 +580,39 @@ function Editor() {
   const copyRoomUrl = () => {
     const url = roomId;
     navigator.clipboard.writeText(url).then(() => {
-      setTerminalOutput(prev => [...prev, { 
-        id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        type: 'success', 
-        message: 'Room URL copied to clipboard!', 
-        timestamp: new Date().toLocaleTimeString('en-US', { hour12: false })
-      }]);
+      setTerminalOutput((prev) => [
+        ...prev,
+        {
+          id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          type: "success",
+          message: "Room URL copied to clipboard!",
+          timestamp: new Date().toLocaleTimeString("en-US", { hour12: false }),
+        },
+      ]);
     });
   };
 
   // Handle terminal output from global terminal
   const handleTerminalOutput = (output) => {
-    setTerminalOutput(prev => [...prev, output]);
+    setTerminalOutput((prev) => [...prev, output]);
   };
 
   // Add terminal notification helper
-  const addTerminalNotification = (message, type = 'info') => {
+  const addTerminalNotification = (message, type = "info") => {
     const notification = {
       id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       message,
       type,
-      timestamp: new Date().toLocaleTimeString('en-US', { hour12: false })
+      timestamp: new Date().toLocaleTimeString("en-US", { hour12: false }),
     };
-    setTerminalOutput(prev => [...prev, notification]);
+    setTerminalOutput((prev) => [...prev, notification]);
     setIsTerminalVisible(true);
-    
+
     // Also add to audit logs for system output
     addToAuditLog(message, type);
-    
+
     // Auto-close after 5 seconds for non-error messages
-    if (type !== 'error') {
+    if (type !== "error") {
       setTimeout(() => {
         setIsTerminalVisible(false);
       }, 5000);
@@ -551,30 +620,41 @@ function Editor() {
   };
 
   // Add system output to audit logs
-  const addToAuditLog = (message, type = 'info') => {
+  const addToAuditLog = (message, type = "info") => {
     const logEntry = {
       id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       message,
       type,
-      timestamp: new Date().toLocaleTimeString('en-US', { hour12: false })
+      timestamp: new Date().toLocaleTimeString("en-US", { hour12: false }),
     };
-    setAuditLogs(prev => [...prev.slice(-50), logEntry]); // Keep last 50 entries
+    setAuditLogs((prev) => [...prev.slice(-50), logEntry]); // Keep last 50 entries
   };
 
   // Loading state
   if (isJoining) {
     return (
-      <div className="min-h-screen bg-black text-green-400 font-mono flex items-center justify-center" style={{ fontFamily: "'Courier New', Consolas, Monaco, monospace" }}>
+      <div
+        className="min-h-screen bg-black text-green-400 font-mono flex items-center justify-center"
+        style={{ fontFamily: "'Courier New', Consolas, Monaco, monospace" }}
+      >
         <div className="text-center">
           <div className="mb-4">
             <Terminal className="w-12 h-12 text-green-400 mx-auto mb-4 animate-pulse" />
           </div>
           <div className="text-lg mb-2">INITIALIZING SECURE CONNECTION...</div>
-          <div className="text-green-400/60 text-sm">Establishing encrypted tunnel to room {roomId}</div>
+          <div className="text-green-400/60 text-sm">
+            Establishing encrypted tunnel to room {roomId}
+          </div>
           <div className="flex items-center justify-center gap-1 mt-4">
             <div className="w-2 h-2 bg-green-400 rounded-full animate-ping"></div>
-            <div className="w-2 h-2 bg-green-400 rounded-full animate-ping" style={{ animationDelay: '0.5s' }}></div>
-            <div className="w-2 h-2 bg-green-400 rounded-full animate-ping" style={{ animationDelay: '1s' }}></div>
+            <div
+              className="w-2 h-2 bg-green-400 rounded-full animate-ping"
+              style={{ animationDelay: "0.5s" }}
+            ></div>
+            <div
+              className="w-2 h-2 bg-green-400 rounded-full animate-ping"
+              style={{ animationDelay: "1s" }}
+            ></div>
           </div>
         </div>
       </div>
@@ -584,15 +664,16 @@ function Editor() {
   // Error state
   if (joinError) {
     return (
-      <div className="min-h-screen bg-black text-green-400 font-mono flex items-center justify-center" style={{ fontFamily: "'Courier New', Consolas, Monaco, monospace" }}>
+      <div
+        className="min-h-screen bg-black text-green-400 font-mono flex items-center justify-center"
+        style={{ fontFamily: "'Courier New', Consolas, Monaco, monospace" }}
+      >
         <div className="text-center border border-red-400/30 bg-red-400/5 p-8">
           <div className="mb-4">
             <Shield className="w-12 h-12 text-red-400 mx-auto mb-4" />
           </div>
           <div className="text-red-400 text-lg mb-2">CONNECTION_FAILED</div>
-          <div className="text-red-400/60 text-sm mb-6">
-            Error: {joinError}
-          </div>
+          <div className="text-red-400/60 text-sm mb-6">Error: {joinError}</div>
           <div className="space-y-3">
             <button
               onClick={() => window.location.reload()}
@@ -614,22 +695,25 @@ function Editor() {
 
   return (
     <FileSystemProvider socket={socket} user={user}>
-      <div className="min-h-screen bg-black text-green-400 font-mono flex flex-col" style={{ fontFamily: "'Courier New', Consolas, Monaco, monospace" }}>
+      <div
+        className="min-h-screen bg-black text-green-400 font-mono flex flex-col"
+        style={{ fontFamily: "'Courier New', Consolas, Monaco, monospace" }}
+      >
         {/* Terminal Header */}
         <header className="border-b border-green-400/30 bg-black/50">
           <div className="flex items-center justify-between px-6 py-3">
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 <Terminal className="w-4 h-4 text-green-400" />
-                <span className="text-green-400 text-sm">OVERLOOK_SECURE_SESSION</span>
+                <span className="text-green-400 text-sm">
+                  OVERLOOK_SECURE_SESSION
+                </span>
               </div>
               <div className="text-green-400/60 text-xs">|</div>
-              <div className="text-green-400/60 text-xs">
-                ROOM: {roomId}
-              </div>
+              <div className="text-green-400/60 text-xs">ROOM: {roomId}</div>
               <div className="text-green-400/60 text-xs">|</div>
               <div className="text-green-400/60 text-xs">
-                {currentTime.toLocaleTimeString('en-US', { hour12: false })}
+                {currentTime.toLocaleTimeString("en-US", { hour12: false })}
               </div>
             </div>
             <div className="flex items-center gap-4">
@@ -638,10 +722,15 @@ function Editor() {
                   <>
                     <Wifi className="w-3 h-3 text-green-400" />
                     <span className="text-green-400">
-                      {realTimeStats.downlink > 0 ? `${realTimeStats.downlink}Mbps` : 'CONNECTED'}
-                      {realTimeStats.effectiveType && realTimeStats.effectiveType !== 'unknown' && (
-                        <span className="text-green-400/60 ml-1">({realTimeStats.effectiveType.toUpperCase()})</span>
-                      )}
+                      {realTimeStats.downlink > 0
+                        ? `${realTimeStats.downlink}Mbps`
+                        : "CONNECTED"}
+                      {realTimeStats.effectiveType &&
+                        realTimeStats.effectiveType !== "unknown" && (
+                          <span className="text-green-400/60 ml-1">
+                            ({realTimeStats.effectiveType.toUpperCase()})
+                          </span>
+                        )}
                     </span>
                   </>
                 ) : (
@@ -675,19 +764,28 @@ function Editor() {
             <div className="flex items-center gap-6 text-xs">
               <div className="flex items-center gap-2">
                 <Users className="w-3 h-3 text-green-400" />
-                <span className="text-green-400/80">PARTICIPANTS: {participants.length}</span>
+                <span className="text-green-400/80">
+                  PARTICIPANTS: {participants.length}
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <Server className="w-3 h-3 text-green-400" />
-                <span className="text-green-400/80">PLATFORM: {systemSpecs.platform}</span>
+                <span className="text-green-400/80">
+                  PLATFORM: {systemSpecs.platform}
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <Activity className="w-3 h-3 text-green-400" />
-                <span className="text-green-400/80">HEAP: {realTimeStats.usedMemory}MB</span>
+                <span className="text-green-400/80">
+                  HEAP: {realTimeStats.usedMemory}MB
+                </span>
               </div>
             </div>
             <div className="flex items-center gap-4">
-              <ParticipantsList participants={participants} terminalStyle={true} />
+              <ParticipantsList
+                participants={participants}
+                terminalStyle={true}
+              />
             </div>
           </div>
         </div>
@@ -719,45 +817,64 @@ function Editor() {
                   <div className="flex-1">
                     <CodeEditor />
                   </div>
-                  
+
                   {/* Audit Logs - Bottom Middle */}
                   <div className="h-32 border-t border-green-400/30 bg-green-400/5">
                     <div className="border-b border-green-400/30 p-2">
                       <div className="flex items-center gap-2">
                         <Activity className="w-3 h-3 text-green-400" />
-                        <span className="text-green-400/80 text-xs font-bold">AUDIT_LOG</span>
+                        <span className="text-green-400/80 text-xs font-bold">
+                          AUDIT_LOG
+                        </span>
                         <div className="ml-auto text-green-400/60 text-xs">
-                          {currentTime.toLocaleTimeString('en-US', { hour12: false })}
+                          {currentTime.toLocaleTimeString("en-US", {
+                            hour12: false,
+                          })}
                         </div>
                       </div>
                     </div>
-                    <div 
+                    <div
                       className="p-2 overflow-y-auto h-24 text-xs space-y-1"
-                      style={{ fontFamily: "'Courier New', Consolas, Monaco, monospace" }}
+                      style={{
+                        fontFamily:
+                          "'Courier New', Consolas, Monaco, monospace",
+                      }}
                     >
                       {/* System initialization log */}
                       <div className="text-green-400/60">
-                        [{new Date().toLocaleTimeString('en-US', { hour12: false })}] SYSTEM_INITIALIZED - Room: {roomId}
+                        [
+                        {new Date().toLocaleTimeString("en-US", {
+                          hour12: false,
+                        })}
+                        ] SYSTEM_INITIALIZED - Room: {roomId}
                       </div>
-                      
+
                       {/* Real audit logs from system output */}
                       {auditLogs.slice(-10).map((log) => (
-                        <div 
-                          key={log.id} 
+                        <div
+                          key={log.id}
                           className={`${
-                            log.type === 'error' ? 'text-red-400' :
-                            log.type === 'warning' ? 'text-yellow-400' :
-                            log.type === 'success' ? 'text-green-400' :
-                            'text-green-400/60'
+                            log.type === "error"
+                              ? "text-red-400"
+                              : log.type === "warning"
+                              ? "text-yellow-400"
+                              : log.type === "success"
+                              ? "text-green-400"
+                              : "text-green-400/60"
                           }`}
                         >
                           [{log.timestamp}] {log.message}
                         </div>
                       ))}
-                      
+
                       {/* Connection status */}
                       <div className="text-green-400/60">
-                        [{currentTime.toLocaleTimeString('en-US', { hour12: false })}] CONNECTION_STATUS: {isConnected ? 'SECURE' : 'DISCONNECTED'}
+                        [
+                        {currentTime.toLocaleTimeString("en-US", {
+                          hour12: false,
+                        })}
+                        ] CONNECTION_STATUS:{" "}
+                        {isConnected ? "SECURE" : "DISCONNECTED"}
                       </div>
                     </div>
                   </div>
@@ -777,9 +894,8 @@ function Editor() {
               </div>
             </div>
           </div>
-
         </main>
-        
+
         {/* Terminal Toggle Button */}
         <button
           onClick={() => setIsTerminalVisible(!isTerminalVisible)}
@@ -789,10 +905,10 @@ function Editor() {
         >
           <Terminal className="w-5 h-5" />
         </button>
-        
+
         {/* Global Terminal */}
-        <GlobalTerminal 
-          onOutput={handleTerminalOutput} 
+        <GlobalTerminal
+          onOutput={handleTerminalOutput}
           terminalOutput={terminalOutput}
           isVisible={isTerminalVisible}
           onVisibilityChange={setIsTerminalVisible}

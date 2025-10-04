@@ -10,6 +10,8 @@ const { connectMongoDB } = require("./db/connection");
 const { setupSocketHandlers, getRoomStats } = require("./websocket/sockets");
 const { authenticateSocket } = require("./middleware/auth");
 const roomRoutes = require("./routes/roomRoutes");
+const UserRouter = require("./routes/UserRouter");
+const RoomsRouter = require("./routes/RoomsRouter");
 const { connect } = require("http2");
 
 // Create Express app and HTTP server
@@ -51,12 +53,14 @@ app.get("/", (req, res) => {
   });
 });
 
+app.use("/public", UserRouter);
+app.use("/rooms", RoomsRouter);
+
 app.get("/api/rooms", (req, res) => {
   const rooms = getRoomStats();
   res.json({ rooms });
 });
 
-// Start server
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

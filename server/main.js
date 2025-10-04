@@ -24,6 +24,7 @@ const server = http.createServer(app);
 const allowedOrigins = [
   "http://localhost:5173", // Development
   "https://overlook-6yrs.onrender.com", // Production frontend
+  "https://overlooksecurity.vercel.app",
   "http://localhost:3000" // Alternative dev port
 ];
 

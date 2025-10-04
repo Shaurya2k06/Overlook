@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
 import axios from "axios";
 import { toast } from "react-toastify";
+import { Copy } from "lucide-react";
 import { 
   Terminal, 
   Shield, 
@@ -386,7 +387,7 @@ function Editor() {
           {
             userId: user.id,
             username: user.username,
-          }
+          },
         );
 
         if (response.data.success && socket) {
@@ -402,12 +403,12 @@ function Editor() {
         setJoinError(
           error.response?.data?.message ||
             error.message ||
-            "Failed to join room"
+            "Failed to join room",
         );
         setIsJoining(false);
       }
     },
-    [user.id, user.username, socket]
+    [user.id, user.username, socket],
   );
 
   // Auto-join room when component mounts
@@ -511,7 +512,7 @@ function Editor() {
 
   // Copy room URL to clipboard
   const copyRoomUrl = () => {
-    const url = window.location.href;
+    const url = roomId;
     navigator.clipboard.writeText(url).then(() => {
       setTerminalOutput(prev => [...prev, { 
         id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,

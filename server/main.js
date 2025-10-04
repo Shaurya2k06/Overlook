@@ -3,12 +3,14 @@ const http = require("http");
 const socketIo = require("socket.io");
 const cors = require("cors");
 require("dotenv").config();
+const URL = process.env.MONGO_URI; // importing our mongo uri from env (atlas)
 
 // Import our modules
-const connectDB = require("./db/connection");
+const { connectMongoDB } = require("./db/connection");
 const { setupSocketHandlers, getRoomStats } = require("./websocket/sockets");
 const { authenticateSocket } = require("./middleware/auth");
 const roomRoutes = require("./routes/roomRoutes");
+const { connect } = require("http2");
 
 // Create Express app and HTTP server
 const app = express();
@@ -27,7 +29,6 @@ app.use(cors());
 app.use(express.json());
 
 // Connect to MongoDB
-connectDB();
 
 // Socket.IO authentication middleware
 io.use(authenticateSocket);
@@ -55,6 +56,7 @@ app.get("/api/rooms", (req, res) => {
 // Start server
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
+  connectMongoDB(URL);
   console.log(` Server running on port ${PORT}`);
   console.log(` WebSocket server ready for connections`);
   console.log(` Authentication enabled for WebSocket connections`);

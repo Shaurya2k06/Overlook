@@ -907,7 +907,7 @@ function Editor() {
                     </div>
                   </div>
                   <div className="p-6 overflow-y-auto h-full">
-                    <PromptInput onSubmit={handlePromptSubmit} />
+                    <PromptInput onSubmit={handlePromptSubmit} roomId={roomId} />
                   </div>
                 </div>
               </div>

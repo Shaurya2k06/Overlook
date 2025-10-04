@@ -8,7 +8,7 @@ import { Code, Users, Sparkles, Lock, Shield, Zap, Terminal, GitBranch, Activity
 function Home() {
   const navigate = useNavigate();
   const [activeAgent, setActiveAgent] = useState(0);
-  const [securityScore, setSecurityScore] = useState(0);
+  const [securityScore, setSecurityScore] = useState(85);
   const [isVisible, setIsVisible] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
@@ -25,9 +25,10 @@ function Home() {
   const [securityInsights, setSecurityInsights] = useState({
     threatsBlocked: 0,
     codeLinesScanned: 0,
-    vulnerabilitiesFixed: 0,
-    activeScans: 1
+    vulnerabilitiesFound: 0,
+    complianceScore: 0
   });
+  
   const [selectedTab, setSelectedTab] = useState('overview');
   const techContainerRef = useRef(null);
 
@@ -266,67 +267,201 @@ function Home() {
         </div>
       </section>
 
-      {/* SECTION 2: INTERACTIVE MULTI-AGENT PIPELINE (simplified for stability) */}
-      <section id="pipeline" className="relative min-h-screen flex items-center justify-center py-24 bg-black snap-start">
-        <div className="container mx-auto px-8">
-          <div className="max-w-7xl mx-auto">
-            <h2 className="text-4xl font-light mb-8 text-center" style={{ fontFamily: "Advercase, monospace" }}>
-              Interactive Security Pipeline
+      {/* SECTION 2: SECURITY PIPELINE */}
+      <section id="pipeline" className="relative min-h-screen py-16 bg-black border-t border-white/10 snap-start">
+        <div className="container mx-auto px-8 max-w-5xl">
+          
+          {/* Header */}
+          <div className="mb-8">
+            <h2 className="text-3xl font-light mb-2 text-white" style={{ fontFamily: "Advercase, monospace" }}>
+              Security Pipeline
             </h2>
+            <p className="text-gray-400 text-sm">Multi-agent code security analysis and remediation</p>
+          </div>
 
-            <div className="flex justify-center mb-8">
-              <div className="flex items-center gap-4 px-6 py-3 bg-black/60 rounded-lg">
-                <button
-                  onClick={() => {
-                    setIsProcessing(!isProcessing);
-                    if (!isProcessing) setHasPlayedOnce(true);
-                  }}
-                  className={`px-4 py-2 border rounded transition-all ${isProcessing ? 'border-orange-400 text-orange-400' : 'border-[#00EFA6] text-[#00EFA6]'}`}
-                >
-                  {isProcessing ? 'PAUSE' : 'PLAY'}
-                </button>
-                <button
-                  onClick={() => {
-                    setCurrentStep(0);
-                    setActiveAgent(0);
-                    setVulnerabilitiesFound(0);
-                    setVulnerabilitiesFixed(0);
-                  }}
-                  className="px-4 py-2 bg-white/5 text-white rounded"
-                >
-                  RESTART
-                </button>
-                <div className="flex items-center gap-2 ml-4">
-                  <div className="text-xs text-gray-400 uppercase">Step:</div>
-                  <div className="text-sm text-[#00EFA6]">{currentStep + 1}/4</div>
+          {/* Pipeline Process */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            
+            {/* Process Steps */}
+            <div className="lg:col-span-2">
+              <div className="border border-white/20 bg-black/50">
+                <div className="p-4 border-b border-white/20">
+                  <div className="flex items-center justify-between">
+                    <span className="text-white text-sm font-medium" style={{ fontFamily: "Advercase, monospace" }}>PROCESS</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          setIsProcessing(!isProcessing);
+                          if (!isProcessing) setHasPlayedOnce(true);
+                        }}
+                        className="px-3 py-1 border border-white/30 text-white text-xs hover:bg-white/5 transition-colors"
+                        style={{ fontFamily: "Advercase, monospace" }}
+                      >
+                        {isProcessing ? 'PAUSE' : 'START'}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setCurrentStep(0);
+                          setActiveAgent(0);
+                          setVulnerabilitiesFound(0);
+                          setVulnerabilitiesFixed(0);
+                        }}
+                        className="px-3 py-1 border border-white/30 text-white text-xs hover:bg-white/5 transition-colors"
+                        style={{ fontFamily: "Advercase, monospace" }}
+                      >
+                        RESET
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="p-4 space-y-3">
+                  {agents.map((agent, idx) => {
+                    const isActive = idx === activeAgent;
+                    const isCompleted = idx < activeAgent;
+                    
+                    return (
+                      <div key={idx} className="flex items-center gap-3">
+                        <div className="w-6 text-xs text-gray-500 font-mono text-right">
+                          {String(idx + 1).padStart(2, '0')}
+                        </div>
+                        <div className={`w-2 h-2 border ${
+                          isCompleted ? 'bg-white border-white' : 
+                          isActive ? 'bg-white/50 border-white animate-pulse' : 
+                          'border-white/30'
+                        }`} />
+                        <div className="flex-1">
+                          <div className={`text-sm ${isActive || isCompleted ? 'text-white' : 'text-gray-500'}`}>
+                            {agent.name}
+                          </div>
+                          <div className="text-xs text-gray-400">
+                            {agent.task}
+                          </div>
+                        </div>
+                        <div className="text-xs text-gray-500 font-mono">
+                          {isCompleted ? 'DONE' : isActive ? 'PROC' : 'WAIT'}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-2">
-                <h3 className="text-sm uppercase tracking-widest text-gray-400 mb-4">Live Code Processing</h3>
-                <div className="p-4 bg-white/5 rounded mb-4">
-                  <div className="text-xs text-gray-400 mb-2">Stage: {codeSteps[currentStep].stage}</div>
-                  <pre className="text-sm font-mono text-white overflow-x-auto p-2 bg-black/30 rounded">
-{codeSteps[currentStep].input}
-                  </pre>
+            {/* Stats */}
+            <div className="space-y-6">
+              <div className="border border-white/20 bg-black/50">
+                <div className="p-4 border-b border-white/20">
+                  <span className="text-white text-sm font-medium" style={{ fontFamily: "Advercase, monospace" }}>STATS</span>
                 </div>
-              </div>
-
-              <div>
-                <h3 className="text-sm uppercase tracking-widest text-gray-400 mb-4">Security Dashboard</h3>
-                <div className="p-4 bg-white/5 rounded">
-                  <div className="text-xs text-gray-400">Threats Blocked</div>
-                  <div className="text-2xl text-red-400 mb-2">{securityInsights.threatsBlocked}</div>
-                  <div className="text-xs text-gray-400">Lines Scanned</div>
-                  <div className="text-2xl text-blue-400 mb-2">{securityInsights.codeLinesScanned.toLocaleString()}</div>
-                  <div className="text-xs text-gray-400">Vulnerabilities Fixed</div>
-                  <div className="text-2xl text-[#00EFA6]">{vulnerabilitiesFixed}</div>
+                <div className="p-4 space-y-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400 text-xs">SECURITY SCORE</span>
+                    <span className="text-white text-sm font-mono">{securityScore}%</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400 text-xs">VULNERABILITIES</span>
+                    <span className="text-white text-sm font-mono">{vulnerabilitiesFound}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400 text-xs">FIXED</span>
+                    <span className="text-white text-sm font-mono">{vulnerabilitiesFixed}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-400 text-xs">LINES SCANNED</span>
+                    <span className="text-white text-sm font-mono">{securityInsights.codeLinesScanned.toLocaleString()}</span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
+
+          {/* Terminal Output */}
+          <div className="border border-white/20 bg-black/80">
+            <div className="p-4 border-b border-white/20">
+              <div className="flex items-center justify-between">
+                <span className="text-white text-sm font-medium" style={{ fontFamily: "Advercase, monospace" }}>TERMINAL</span>
+                <div className="text-xs text-gray-500 font-mono">
+                  STEP {currentStep + 1}/4
+                </div>
+              </div>
+            </div>
+            <div className="p-4">
+              <div className="font-mono text-xs space-y-1 text-gray-300 min-h-[200px]">
+                <div className="text-gray-500">$ overlook-security --scan --realtime</div>
+                <div className="text-gray-400">Initializing security pipeline...</div>
+                <div className="text-gray-400">Loading agents: [Scanner, Analyzer, Fixer, Validator]</div>
+                <div className="text-white">Pipeline ready.</div>
+                <div className="text-gray-400">---</div>
+                
+                {isProcessing && (
+                  <>
+                    <div className="text-white">Running: {agents[activeAgent].name}</div>
+                    <div className="text-gray-400">Task: {agents[activeAgent].task}</div>
+                    <div className="text-gray-400">Status: {agents[activeAgent].status}</div>
+                    
+                    {vulnerabilitiesFound > 0 && (
+                      <>
+                        <div className="text-yellow-400">Warning: {vulnerabilitiesFound} vulnerabilities detected</div>
+                        {codeSteps[currentStep].vulnerabilities.map((vuln, idx) => (
+                          <div key={idx} className="text-red-400">  - {vuln}</div>
+                        ))}
+                      </>
+                    )}
+                    
+                    {vulnerabilitiesFixed > 0 && (
+                      <div className="text-white">Info: {vulnerabilitiesFixed} vulnerabilities remediated</div>
+                    )}
+                    
+                    <div className="text-gray-400">Processing time: 1.2s</div>
+                    <div className="text-gray-400">Memory usage: 24.1MB</div>
+                    <div className="text-gray-400">CPU: 12.3%</div>
+                  </>
+                )}
+                
+                {!isProcessing && hasPlayedOnce && (
+                  <>
+                    <div className="text-white">Pipeline execution completed.</div>
+                    <div className="text-white">Security score: {securityScore}%</div>
+                    <div className="text-gray-400">All agents finished successfully.</div>
+                  </>
+                )}
+                
+                <div className="flex items-center mt-2">
+                  <span className="text-gray-500">$ </span>
+                  <div className="w-2 h-4 bg-white/50 ml-1 animate-pulse" />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Code Diff */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+            {/* Before */}
+            <div className="border border-white/20 bg-black/50">
+              <div className="p-3 border-b border-white/20">
+                <span className="text-gray-400 text-xs font-medium" style={{ fontFamily: "Advercase, monospace" }}>BEFORE</span>
+              </div>
+              <div className="p-4">
+                <pre className="text-xs font-mono text-gray-300 overflow-x-auto">
+{currentStep === 0 ? codeSteps[0].input : codeSteps[Math.max(0, currentStep - 1)].input}
+                </pre>
+              </div>
+            </div>
+            
+            {/* After */}
+            <div className="border border-white/20 bg-black/50">
+              <div className="p-3 border-b border-white/20">
+                <span className="text-gray-400 text-xs font-medium" style={{ fontFamily: "Advercase, monospace" }}>AFTER</span>
+              </div>
+              <div className="p-4">
+                <pre className="text-xs font-mono text-gray-300 overflow-x-auto">
+{codeSteps[currentStep].input}
+                </pre>
+              </div>
+            </div>
+          </div>
+          
         </div>
       </section>
 

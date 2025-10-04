@@ -151,6 +151,8 @@ function setupSocketHandlers(io) {
           }
 
           existingUser.socketId = socket.id;
+          // Ensure userId is preserved
+          existingUser.userId = userId;
           room.users.set(userId, existingUser);
         } else {
           // Check if room is full (max 3 users) - only for new users
@@ -167,6 +169,7 @@ function setupSocketHandlers(io) {
           // Add new user to room
           console.log(`Adding new user ${user.name} to room ${roomId}`);
           room.users.set(userId, {
+            userId: userId, // Add the userId field
             socketId: socket.id,
             username: user.name, // Using name as username
             name: user.name,
@@ -184,22 +187,32 @@ function setupSocketHandlers(io) {
         socket.email = user.email;
 
         console.log(`${user.name} (${userId}) joined room ${roomId}`);
+        console.log(`Room ${roomId} now has ${room.users.size} users:`, Array.from(room.users.entries()));
 
         // Send current room state to the new user
+        const usersArray = Array.from(room.users.values()).map((user) => ({
+          userId: user.userId,
+          username: user.username,
+          name: user.name,
+        }));
+        
+        console.log(`Sending users array to client:`, usersArray);
+        
         socket.emit("room-joined", {
           roomId,
           code: room.code,
           language: room.language,
           messages: room.messages,
           userCount: room.users.size,
-          users: Array.from(room.users.values()).map((user) => ({
-            userId: user.userId,
-            username: user.username,
-            name: user.name,
-          })),
+          users: usersArray,
           files: Array.from(room.files.values()),
           folders: Array.from(room.folders.values()),
         });
+
+        // Send chat history separately for better organization
+        if (room.messages.length > 0) {
+          socket.emit("chat-history", room.messages);
+        }
 
         // Notify other users in the room (only for new users, not reconnections)
         if (!existingUser) {
@@ -295,7 +308,35 @@ function setupSocketHandlers(io) {
       }
     });
 
-    // Chat message event
+    // Chat message handling
+    socket.on("send-chat-message", (data) => {
+      const { roomId, message } = data;
+      const room = rooms.get(roomId);
+      const user = getUserFromSocket(socket);
+
+      if (room && user.userId && message.trim()) {
+        const chatMessage = {
+          id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          userId: user.userId,
+          username: user.username,
+          message: message.trim(),
+          timestamp: new Date().toLocaleTimeString('en-US', { hour12: false })
+        };
+
+        // Add message to room's message history (keep last 100 messages)
+        room.messages.push(chatMessage);
+        if (room.messages.length > 100) {
+          room.messages = room.messages.slice(-100);
+        }
+
+        // Broadcast to all users in the room
+        io.to(roomId).emit("chat-message", chatMessage);
+        
+        console.log(`Chat message from ${user.username} in room ${roomId}: ${message}`);
+      }
+    });
+
+    // Legacy chat-message handler (keeping for compatibility)
     socket.on("chat-message", (data) => {
       const { message, type = "user" } = data;
       const room = rooms.get(socket.roomId);

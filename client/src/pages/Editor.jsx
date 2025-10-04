@@ -26,9 +26,15 @@ import ParticipantsList from "../components/ParticipantsList";
 import FileExplorer from "../components/FileExplorer";
 import TabSystem from "../components/TabSystem";
 import StatusBar from "../components/StatusBar";
+import RoomChat from "../components/RoomChat";
+import fetchData, { getSocketUrl } from "../../service/backendApi";
 
-const API_BASE_URL = "http://localhost:3001/api";
-const SOCKET_URL = "http://localhost:3001";
+// Dynamic API and Socket URLs
+const API_BASE_URL =
+  import.meta.env.MODE === "production"
+    ? "https://overlook-6yrs.onrender.com/api"
+    : "http://localhost:3001/api";
+const SOCKET_URL = getSocketUrl();
 
 function Editor() {
   const { roomId } = useParams();
@@ -224,8 +230,13 @@ function Editor() {
 
     newSocket.on("room-joined", (data) => {
       console.log("Joined room:", data);
-      console.log("Room participants:", data.users);
-      setParticipants(data.users || []);
+      console.log("Participants received:", data.users);
+      console.log("Current user:", user);
+
+      // Set participants from server data
+      const participantsList = data.users || [];
+      setParticipants(participantsList);
+
       setIsJoining(false);
       setJoinError(null);
 
@@ -234,16 +245,10 @@ function Editor() {
         `Successfully joined room ${data.roomId}`,
         "success"
       );
-
-      // Show toast notification for successful room join
-      toast.success(`Successfully joined room ${data.roomId}`, {
-        position: "top-right",
-        autoClose: 3000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-      });
+      addTerminalNotification(
+        `Room has ${participantsList.length} participant(s)`,
+        "info"
+      );
 
       // Sync file system data if available
       if (data.files || data.folders) {
@@ -976,6 +981,14 @@ function Editor() {
           terminalOutput={terminalOutput}
           isVisible={isTerminalVisible}
           onVisibilityChange={setIsTerminalVisible}
+        />
+
+        {/* Room Chat */}
+        <RoomChat
+          socket={socket}
+          user={user}
+          participants={participants}
+          roomId={roomId}
         />
 
         {/* Toast Container */}

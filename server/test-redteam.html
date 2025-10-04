@@ -1,0 +1,103 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Red Team Agent Tester</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                margin: 20px;
+            }
+            textarea {
+                width: 100%;
+                height: 200px;
+                margin: 10px 0;
+            }
+            button {
+                padding: 10px 20px;
+                background: #007bff;
+                color: white;
+                border: none;
+                cursor: pointer;
+            }
+            button:hover {
+                background: #0056b3;
+            }
+            .result {
+                margin-top: 20px;
+                padding: 15px;
+                border: 1px solid #ddd;
+                background: #f9f9f9;
+            }
+            pre {
+                white-space: pre-wrap;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Red Team Security Audit Tester</h1>
+
+        <h3>Enter Code to Audit:</h3>
+        <textarea
+            id="codeInput"
+            placeholder="Enter your JavaScript code here..."
+        >
+const apiKey = "sk-1234567890abcdef";
+const userInput = req.body.username;
+const query = "SELECT * FROM users WHERE username = " + userInput;
+db.execute(query);
+eval(req.body.code);
+res.cookie('session', sessionId);
+    </textarea
+        >
+
+        <button onclick="runAudit()">Run Security Audit</button>
+
+        <div id="result" class="result" style="display: none">
+            <h3>Audit Results:</h3>
+            <pre id="auditReport"></pre>
+        </div>
+
+        <script>
+            async function runAudit() {
+                const code = document.getElementById("codeInput").value;
+                const resultDiv = document.getElementById("result");
+                const reportPre = document.getElementById("auditReport");
+
+                if (!code.trim()) {
+                    alert("Please enter some code to audit");
+                    return;
+                }
+
+                try {
+                    const response = await fetch(
+                        "http://localhost:3001/api/redteam/audit",
+                        {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                            },
+                            body: JSON.stringify({
+                                code: code,
+                                language: "javascript",
+                            }),
+                        },
+                    );
+
+                    const data = await response.json();
+
+                    if (response.ok) {
+                        reportPre.textContent = data.audit_report;
+                        resultDiv.style.display = "block";
+                    } else {
+                        reportPre.textContent =
+                            "Error: " + (data.error || "Unknown error");
+                        resultDiv.style.display = "block";
+                    }
+                } catch (error) {
+                    reportPre.textContent = "Network Error: " + error.message;
+                    resultDiv.style.display = "block";
+                }
+            }
+        </script>
+    </body>
+</html>

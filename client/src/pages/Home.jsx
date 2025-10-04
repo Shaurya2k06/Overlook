@@ -466,306 +466,283 @@ function Home() {
       </section>
 
       {/* SECTION 3: THE PROBLEM */}
-      <section id="problem" className="relative min-h-screen flex items-center justify-center py-24 bg-black border-t border-white/10 snap-start">
-        <div className="container mx-auto px-8">
-          <div className="max-w-6xl mx-auto">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-              <div>
-                <span className="text-[#00EFA6] text-sm tracking-widest uppercase mb-4 block">The Problem</span>
-                <h3 className="text-4xl font-light mb-6 leading-tight" style={{ fontFamily: "Advercase, monospace" }}>
-                  Traditional AI Code Generators Create <span className="text-red-400">Vulnerable Code</span>
-                </h3>
-                <p className="text-gray-300 text-lg leading-relaxed mb-8">
-                  Existing tools treat security as an afterthought, leading to critical vulnerabilities in production systems.
-                </p>
-                
-                <div className="space-y-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 flex items-center justify-center border border-red-400/30 bg-red-400/10">
-                      <AlertTriangle className="w-6 h-6 text-red-400" />
-                    </div>
-                    <div>
-                      <div className="text-2xl font-light text-white">73%</div>
-                      <div className="text-sm text-gray-400">Of AI-generated code contains vulnerabilities</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 flex items-center justify-center border border-orange-400/30 bg-orange-400/10">
-                      <AlertTriangle className="w-6 h-6 text-orange-400" />
-                    </div>
-                    <div>
-                      <div className="text-2xl font-light text-white">$45B+</div>
-                      <div className="text-sm text-gray-400">Annual cost of security breaches</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+      <section id="problem" className="relative py-16 bg-black border-t border-white/10 snap-start">
+        <div className="container mx-auto px-8 max-w-5xl">
+          
+          <div className="mb-8">
+            <h3 className="text-3xl font-light mb-2 text-white" style={{ fontFamily: "Advercase, monospace" }}>
+              The Problem
+            </h3>
+            <p className="text-gray-400 text-sm">Traditional AI code generators create vulnerable systems</p>
+          </div>
 
-              <div className="relative">
-                <div className="bg-black border border-red-400/30 p-6 font-mono text-sm">
-                  <div className="flex items-center gap-2 mb-4 pb-4 border-b border-white/20">
-                    <div className="flex gap-2">
-                      <div className="w-3 h-3 rounded-full bg-red-500" />
-                      <div className="w-3 h-3 rounded-full bg-yellow-500" />
-                      <div className="w-3 h-3 rounded-full bg-green-500" />
-                    </div>
-                    <span className="text-gray-400 text-xs ml-4">vulnerable_code.js</span>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="text-gray-400">// AI Generated Code</div>
-                    <div className="text-white">app.post('/login', (req, res) =&gt; {'{'}</div>
-                    <div className="text-white pl-4">const query = <span className="text-red-400">`SELECT * FROM users</span></div>
-                    <div className="text-white pl-8"><span className="text-red-400">WHERE email='$&#123;req.body.email&#125;'`</span>;</div>
-                    <div className="text-white">{'}'});</div>
-                  </div>
-                  <div className="absolute -right-2 -top-2 bg-red-500 text-white text-xs px-3 py-1 uppercase tracking-wide">
-                    SQL Injection
-                  </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            
+            {/* Statistics */}
+            <div className="border border-white/20 bg-black/50">
+              <div className="p-4 border-b border-white/20">
+                <span className="text-white text-sm font-medium" style={{ fontFamily: "Advercase, monospace" }}>SECURITY STATISTICS</span>
+              </div>
+              <div className="p-4 space-y-4">
+                <div className="border-l-2 border-white/30 pl-4">
+                  <div className="text-2xl font-mono text-white">73%</div>
+                  <div className="text-xs text-gray-400">OF AI-GENERATED CODE CONTAINS VULNERABILITIES</div>
+                </div>
+                <div className="border-l-2 border-white/30 pl-4">
+                  <div className="text-2xl font-mono text-white">$45B+</div>
+                  <div className="text-xs text-gray-400">ANNUAL COST OF SECURITY BREACHES</div>
+                </div>
+                <div className="border-l-2 border-white/30 pl-4">
+                  <div className="text-2xl font-mono text-white">2.3x</div>
+                  <div className="text-xs text-gray-400">INCREASE IN AI CODE VULNERABILITIES</div>
                 </div>
               </div>
             </div>
+
+            {/* Code Example */}
+            <div className="border border-white/20 bg-black/80">
+              <div className="p-3 border-b border-white/20">
+                <span className="text-gray-400 text-xs font-medium" style={{ fontFamily: "Advercase, monospace" }}>VULNERABLE_CODE.JS</span>
+              </div>
+              <div className="p-4">
+                <pre className="text-xs font-mono text-gray-300 space-y-1">
+                  <div className="text-gray-500">// Typical AI-generated code</div>
+                  <div>app.post('/login', (req, res) =&gt; {'{'}</div>
+                  <div className="pl-2">const query = `SELECT * FROM users</div>
+                  <div className="pl-4">WHERE email='${'${req.body.email}'}'`;</div>
+                  <div className="pl-2">db.query(query);</div>
+                  <div>{'}'});</div>
+                  <div className="text-gray-500 mt-2">// -&gt; SQL Injection vulnerability</div>
+                </pre>
+              </div>
+            </div>
+            
           </div>
         </div>
       </section>
 
       {/* SECTION 4: OUR SOLUTION */}
-      <section id="solution" className="relative min-h-screen flex items-center justify-center py-24 bg-black border-t border-white/10 snap-start">
-        <div className="container mx-auto px-8">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-16">
-              <span className="text-[#00EFA6] text-sm tracking-widest uppercase mb-4 block">Our Solution</span>
-              <h3 className="text-4xl font-light mb-6" style={{ fontFamily: "Advercase, monospace" }}>
-                <TextAnimate animation="slideUp" by="word">Security-First Architecture</TextAnimate>
-              </h3>
-              <p className="text-gray-300 text-lg max-w-2xl mx-auto">
-                Four specialized AI agents working together to generate, validate, and secure your code in real-time.
-              </p>
+      <section id="solution" className="relative py-16 bg-black border-t border-white/10 snap-start">
+        <div className="container mx-auto px-8 max-w-5xl">
+          
+          <div className="mb-8">
+            <h3 className="text-3xl font-light mb-2 text-white" style={{ fontFamily: "Advercase, monospace" }}>
+              Our Solution
+            </h3>
+            <p className="text-gray-400 text-sm">Multi-agent security architecture with real-time validation</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            <div className="border border-white/20 bg-black/50 p-4">
+              <div className="mb-3">
+                <div className="text-white text-sm font-medium mb-1" style={{ fontFamily: "Advercase, monospace" }}>REAL-TIME VALIDATION</div>
+                <div className="text-xs text-gray-400">Every line analyzed using Semgrep and custom patterns</div>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="group p-8 bg-white/5 hover:border-[#00EFA6]/50 transition-all duration-500 hover:bg-white/10">
-                <div className="flex items-start gap-4 mb-4">
-                  <div className="p-2 border border-[#00EFA6]/30 group-hover:border-[#00EFA6]/60 transition-colors">
-                    <Shield className="w-6 h-6 text-[#00EFA6]" />
-                  </div>
-                  <div>
-                    <h4 className="text-lg font-medium text-white mb-2">Real-time Security Validation</h4>
-                    <p className="text-gray-300 leading-relaxed text-sm">
-                      Every line of generated code is instantly analyzed using Semgrep and custom vulnerability patterns.
-                    </p>
-                  </div>
-                </div>
+            <div className="border border-white/20 bg-black/50 p-4">
+              <div className="mb-3">
+                <div className="text-white text-sm font-medium mb-1" style={{ fontFamily: "Advercase, monospace" }}>RED TEAM TESTING</div>
+                <div className="text-xs text-gray-400">Adversarial agents actively exploit code vulnerabilities</div>
               </div>
+            </div>
 
-              <div className="group p-8 bg-white/5 hover:border-[#00EFA6]/50 transition-all duration-500 hover:bg-white/10">
-                <div className="flex items-start gap-4 mb-4">
-                  <div className="p-2 border border-[#00EFA6]/30 group-hover:border-[#00EFA6]/60 transition-colors">
-                    <AlertTriangle className="w-6 h-6 text-[#00EFA6]" />
-                  </div>
-                  <div>
-                    <h4 className="text-lg font-medium text-white mb-2">Adversarial Red Team Testing</h4>
-                    <p className="text-gray-300 leading-relaxed text-sm">
-                      Our Red Team Agent actively tries to exploit your code, simulating real-world attacks.
-                    </p>
-                  </div>
-                </div>
+            <div className="border border-white/20 bg-black/50 p-4">
+              <div className="mb-3">
+                <div className="text-white text-sm font-medium mb-1" style={{ fontFamily: "Advercase, monospace" }}>MULTI-AGENT COLLABORATION</div>
+                <div className="text-xs text-gray-400">Generation, debugging, security, and testing agents</div>
               </div>
+            </div>
 
-              <div className="group p-8 bg-white/5 hover:border-[#00EFA6]/50 transition-all duration-500 hover:bg-white/10">
-                <div className="flex items-start gap-4 mb-4">
-                  <div className="p-2 border border-[#00EFA6]/30 group-hover:border-[#00EFA6]/60 transition-colors">
-                    <GitBranch className="w-6 h-6 text-[#00EFA6]" />
-                  </div>
-                  <div>
-                    <h4 className="text-lg font-medium text-white mb-2">Multi-Agent Collaboration</h4>
-                    <p className="text-gray-300 leading-relaxed text-sm">
-                      Watch as Generation, Debugging, Security, and Red Team agents collaborate to secure your code.
-                    </p>
-                  </div>
-                </div>
+            <div className="border border-white/20 bg-black/50 p-4">
+              <div className="mb-3">
+                <div className="text-white text-sm font-medium mb-1" style={{ fontFamily: "Advercase, monospace" }}>AUTOMATED PATCHING</div>
+                <div className="text-xs text-gray-400">Automatic generation of secure code alternatives</div>
               </div>
+            </div>
+            
+          </div>
 
-              <div className="group p-8 bg-white/5 hover:border-[#00EFA6]/50 transition-all duration-500 hover:bg-white/10">
-                <div className="flex items-start gap-4 mb-4">
-                  <div className="p-2 border border-[#00EFA6]/30 group-hover:border-[#00EFA6]/60 transition-colors">
-                    <Zap className="w-6 h-6 text-[#00EFA6]" />
-                  </div>
-                  <div>
-                    <h4 className="text-lg font-medium text-white mb-2">Automated Patch Generation</h4>
-                    <p className="text-gray-300 leading-relaxed text-sm">
-                      When vulnerabilities are detected, our system automatically generates secure alternatives.
-                    </p>
-                  </div>
-                </div>
+          {/* Architecture Diagram */}
+          <div className="mt-8 border border-white/20 bg-black/80">
+            <div className="p-4 border-b border-white/20">
+              <span className="text-white text-sm font-medium" style={{ fontFamily: "Advercase, monospace" }}>ARCHITECTURE</span>
+            </div>
+            <div className="p-4">
+              <div className="font-mono text-xs text-gray-300 space-y-1">
+                <div>INPUT → GENERATION_AGENT → SECURITY_AGENT → RED_TEAM → OUTPUT</div>
+                <div className="text-gray-500">       ↓              ↓             ↓        ↓</div>
+                <div className="text-gray-500">    [CODE]      [VALIDATE]   [EXPLOIT]  [PATCH]</div>
               </div>
             </div>
           </div>
+          
         </div>
       </section>
 
       {/* SECTION 5: TECHNOLOGY */}
       <section 
         id="technology" 
-        className="relative min-h-screen flex items-center justify-center py-24 bg-black snap-start"
+        className="relative py-16 bg-black border-t border-white/10 snap-start"
         ref={techContainerRef}
       >
-        <div className="container mx-auto px-8">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-16">
-              <span className="text-[#00EFA6] text-sm tracking-widest uppercase mb-4 block" style={{ fontFamily: "Advercase, monospace" }}>Technology</span>
-              <h3 className="text-4xl font-light mb-6" style={{ fontFamily: "Advercase, monospace" }}>
-                <TextAnimate animation="slideUp" by="word">How Agents Use Overlook</TextAnimate>
-              </h3>
-              <p className="text-gray-300 text-lg max-w-2xl mx-auto">
-                Watch how different AI agents connect through Overlook to secure your code.
-              </p>
-            </div>
+        <div className="container mx-auto px-8 max-w-5xl">
+          
+          <div className="mb-8">
+            <h3 className="text-3xl font-light mb-2 text-white" style={{ fontFamily: "Advercase, monospace" }}>
+              Technology Stack
+            </h3>
+            <p className="text-gray-400 text-sm">AI models and security tools integrated into Overlook</p>
+          </div>
 
-            {/* Central Overlook Hub with Custom Connections */}
-            <div className="relative mb-16">
-              {/* Flowing connection lines */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="relative w-96 h-96">
-                  {/* Diagonal connection lines */}
-                  {[0, 1, 2, 3].map(idx => (
-                    <div
-                      key={idx}
-                      className="absolute w-0.5 bg-gradient-to-br from-transparent via-[#00EFA6]/30 to-transparent animate-pulse"
-                      style={{
-                        height: '120px',
-                        transformOrigin: 'center',
-                        transform: `rotate(${idx * 90 + 45}deg)`,
-                        left: '50%',
-                        top: '50%',
-                        marginLeft: '-1px',
-                        marginTop: '-60px'
-                      }}
-                    />
-                  ))}
-                </div>
+          {/* AI Models */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            
+            <div className="border border-white/20 bg-black/50">
+              <div className="p-4 border-b border-white/20">
+                <span className="text-white text-sm font-medium" style={{ fontFamily: "Advercase, monospace" }}>AI MODELS</span>
               </div>
-
-              <div className="flex justify-center mb-8 relative z-10">
-                <div className="w-32 h-32 flex items-center justify-center relative">
-                  <img 
-                    src="/logo.png" 
-                    alt="Overlook Logo" 
-                    className="w-full h-full object-contain"
-                  />
-                  <div className="absolute -bottom-8 text-center">
-                    <div className="text-lg font-bold text-white" style={{ fontFamily: "Advercase, monospace" }}>OVERLOOK</div>
-                    <div className="text-xs text-gray-400">Security Hub</div>
-                  </div>
+              <div className="p-4 space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-400 text-xs">GPT-4O</span>
+                  <span className="text-white text-xs">CODE GENERATION</span>
                 </div>
-              </div>
-
-              {/* AI Models around Overlook */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-8 relative z-10">
-                {[
-                  { name: "GPT-4o", desc: "Code Generation", color: "#00EFA6" },
-                  { name: "Claude 3.5", desc: "Security Analysis", color: "#60A5FA" },
-                  { name: "Groq Llama", desc: "Fast Debugging", color: "#F59E0B" },
-                  { name: "Ollama", desc: "Red Team Testing", color: "#EF4444" },
-                ].map((tech, idx) => {
-                  return (
-                    <div 
-                      key={idx}
-                      className="group p-6 bg-white/5 hover:bg-white/10 text-center rounded-lg transition-all duration-500 hover:scale-105"
-                    >
-                      <div 
-                        className="w-12 h-12 mx-auto mb-4 flex items-center justify-center rounded-lg"
-                        style={{ backgroundColor: `${tech.color}20` }}
-                      >
-                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: tech.color }} />
-                      </div>
-                      <h4 className="text-lg font-medium text-white mb-2" style={{ fontFamily: "Advercase, monospace" }}>{tech.name}</h4>
-                      <p className="text-xs text-gray-400 uppercase tracking-wider">{tech.desc}</p>
-                    </div>
-                  );
-                })}
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-400 text-xs">CLAUDE 3.5</span>
+                  <span className="text-white text-xs">SECURITY ANALYSIS</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-400 text-xs">GROQ LLAMA</span>
+                  <span className="text-white text-xs">FAST DEBUGGING</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-400 text-xs">OLLAMA</span>
+                  <span className="text-white text-xs">RED TEAM TESTING</span>
+                </div>
               </div>
             </div>
 
-            <div className="p-8 bg-white/5 rounded-lg">
-              <div className="text-center mb-6">
-                <h4 className="text-sm uppercase tracking-widest text-gray-400 mb-2">Integrated Security Tools</h4>
+            <div className="border border-white/20 bg-black/50">
+              <div className="p-4 border-b border-white/20">
+                <span className="text-white text-sm font-medium" style={{ fontFamily: "Advercase, monospace" }}>SECURITY TOOLS</span>
               </div>
-              <div className="flex flex-wrap justify-center gap-6">
-                {["Semgrep", "ESLint Security", "npm audit", "Custom Patterns"].map((tool, idx) => (
-                  <div key={idx} className="px-4 py-2 bg-white/5 text-sm text-white rounded">
-                    {tool}
+              <div className="p-4 space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-400 text-xs">SEMGREP</span>
+                  <span className="text-white text-xs">STATIC ANALYSIS</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-400 text-xs">ESLINT SECURITY</span>
+                  <span className="text-white text-xs">JS VULNERABILITIES</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-400 text-xs">NPM AUDIT</span>
+                  <span className="text-white text-xs">DEPENDENCY SCAN</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-400 text-xs">CUSTOM PATTERNS</span>
+                  <span className="text-white text-xs">PROPRIETARY RULES</span>
+                </div>
+              </div>
+            </div>
+            
+          </div>
+
+          {/* Data Flow */}
+          <div className="border border-white/20 bg-black/80">
+            <div className="p-4 border-b border-white/20">
+              <span className="text-white text-sm font-medium" style={{ fontFamily: "Advercase, monospace" }}>DATA FLOW</span>
+            </div>
+            <div className="p-4">
+              <div className="font-mono text-xs text-gray-300 space-y-2">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
+                  <div className="border border-white/20 p-2">
+                    <div className="text-white text-xs mb-1">INPUT</div>
+                    <div className="text-gray-400 text-xs">User prompt</div>
                   </div>
-                ))}
+                  <div className="border border-white/20 p-2">
+                    <div className="text-white text-xs mb-1">GENERATE</div>
+                    <div className="text-gray-400 text-xs">AI models</div>
+                  </div>
+                  <div className="border border-white/20 p-2">
+                    <div className="text-white text-xs mb-1">VALIDATE</div>
+                    <div className="text-gray-400 text-xs">Security scan</div>
+                  </div>
+                  <div className="border border-white/20 p-2">
+                    <div className="text-white text-xs mb-1">OUTPUT</div>
+                    <div className="text-gray-400 text-xs">Secure code</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
+          
         </div>
       </section>
 
       {/* SECTION 6: RESULTS */}
-      <section id="results" className="relative min-h-screen flex items-center justify-center py-32 bg-black border-t border-white/10 snap-start">
-        <div className="container mx-auto px-8 relative z-10">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-16">
-              <span className="text-[#00EFA6] text-sm tracking-widest uppercase mb-4 block" style={{ fontFamily: "Advercase, monospace" }}>Results</span>
-              <h3 className="text-4xl font-light mb-6" style={{ fontFamily: "Advercase, monospace" }}>
-                <TextAnimate animation="slideUp" by="word">Measurable Security Improvement</TextAnimate>
-              </h3>
+      <section id="results" className="relative py-16 bg-black border-t border-white/10 snap-start">
+        <div className="container mx-auto px-8 max-w-5xl">
+          
+          <div className="mb-8">
+            <h3 className="text-3xl font-light mb-2 text-white" style={{ fontFamily: "Advercase, monospace" }}>
+              Performance Metrics
+            </h3>
+            <p className="text-gray-400 text-sm">Measurable security improvements with Overlook</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            
+            <div className="border border-white/20 bg-black/50 p-4">
+              <div className="text-3xl font-mono text-white mb-2">80%+</div>
+              <div className="text-sm text-white mb-1" style={{ fontFamily: "Advercase, monospace" }}>VULNERABILITY REDUCTION</div>
+              <div className="text-xs text-gray-400">Compared to standard AI generation</div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-              <div className="text-center p-8 bg-white/5">
-                <div className="text-5xl font-light text-[#00EFA6] mb-4" style={{ fontFamily: "Advercase, monospace" }}>80%+</div>
-                <div className="text-white mb-2" style={{ fontFamily: "Advercase, monospace" }}>Vulnerability Reduction</div>
-                <div className="text-sm text-gray-400" style={{ fontFamily: "Advercase, monospace" }}>Compared to standard AI code generation</div>
-              </div>
-
-              <div className="text-center p-8 bg-white/5">
-                <div className="text-5xl font-light text-[#00EFA6] mb-4">2.3s</div>
-                <div className="text-white mb-2">Average Analysis Time</div>
-                <div className="text-sm text-gray-400">Complete security validation in seconds</div>
-              </div>
-
-              <div className="text-center p-8 bg-white/5">
-                <div className="text-5xl font-light text-[#00EFA6] mb-4">100%</div>
-                <div className="text-white mb-2">Coverage</div>
-                <div className="text-sm text-gray-400">Every line of code is security validated</div>
-              </div>
+            <div className="border border-white/20 bg-black/50 p-4">
+              <div className="text-3xl font-mono text-white mb-2">2.3s</div>
+              <div className="text-sm text-white mb-1" style={{ fontFamily: "Advercase, monospace" }}>AVERAGE ANALYSIS TIME</div>
+              <div className="text-xs text-gray-400">Complete security validation</div>
             </div>
 
-            <div className="text-center">
-              <h3 className="text-3xl font-light mb-6 leading-tight" style={{ fontFamily: "Advercase, monospace" }}>
-                <TextAnimate animation="slideUp" by="word">Ready to generate secure code?</TextAnimate>
-              </h3>
-              <p className="text-gray-300 text-lg mb-10 leading-relaxed max-w-2xl mx-auto">
+            <div className="border border-white/20 bg-black/50 p-4">
+              <div className="text-3xl font-mono text-white mb-2">100%</div>
+              <div className="text-sm text-white mb-1" style={{ fontFamily: "Advercase, monospace" }}>CODE COVERAGE</div>
+              <div className="text-xs text-gray-400">Every line security validated</div>
+            </div>
+            
+          </div>
+
+          {/* Call to Action */}
+          <div className="border border-white/20 bg-black/80 p-6 text-center">
+            <div className="mb-4">
+              <h4 className="text-xl font-light text-white mb-2" style={{ fontFamily: "Advercase, monospace" }}>
+                Ready to generate secure code?
+              </h4>
+              <p className="text-gray-400 text-sm">
                 Join the future of AI-powered development with built-in security validation.
               </p>
-              
-              <div className="flex items-center justify-center gap-6 flex-col sm:flex-row mb-12">
-                <button 
-                  onClick={() => setShowLogin(true)}
-                  className="group px-14 py-5 bg-white text-black hover:bg-gray-200 transition-all duration-300 text-lg uppercase tracking-widest"
-                  style={{ fontFamily: "Advercase, monospace" }}
-                >
-                  <span className="flex items-center gap-2">
-                    Get Started
-                    <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                  </span>
-                </button>
-              </div>
-
-              
             </div>
+            
+            <button 
+              onClick={() => setShowLogin(true)}
+              className="px-8 py-3 border border-white/30 text-white hover:bg-white/5 transition-colors text-sm"
+              style={{ fontFamily: "Advercase, monospace" }}
+            >
+              GET STARTED
+            </button>
           </div>
+          
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="relative border-t border-white/10 py-12">
-        <div className="container mx-auto px-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="text-gray-400 text-sm">© {new Date().getFullYear()} Overlook. All rights reserved.</div>
-            <div className="text-gray-400 text-sm">Built with React & WebSocket</div>
+      <footer className="border-t border-white/10 py-8 bg-black">
+        <div className="container mx-auto px-8 max-w-5xl">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-gray-500">
+            <div style={{ fontFamily: "Advercase, monospace" }}>© {new Date().getFullYear()} OVERLOOK. ALL RIGHTS RESERVED.</div>
+            <div style={{ fontFamily: "Advercase, monospace" }}>BUILT WITH REACT & WEBSOCKET</div>
           </div>
         </div>
       </footer>

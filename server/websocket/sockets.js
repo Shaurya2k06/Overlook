@@ -1,5 +1,6 @@
 const User = require("../model/User");
 const RoomController = require("../controllers/RoomController");
+const HybridRoomController = require("../controllers/HybridRoomController");
 
 // Store active rooms and their data
 const rooms = new Map();
@@ -261,8 +262,9 @@ function setupSocketHandlers(io) {
         room.code = code;
         room.language = language;
 
-        // Update the room code in RoomController
+        // Update the room code in both systems
         RoomController.updateRoomCode(socket.roomId, code);
+        HybridRoomController.updateRoomCode(socket.roomId, code);
 
         // Broadcast to other users in the room
         broadcastToRoom(
@@ -291,8 +293,9 @@ function setupSocketHandlers(io) {
         room.code = code;
         room.language = language;
 
-        // Update the room code in RoomController
+        // Update the room code in both systems
         RoomController.updateRoomCode(socket.roomId, code);
+        HybridRoomController.updateRoomCode(socket.roomId, code);
 
         // Broadcast to all users in the room (including sender)
         io.to(socket.roomId).emit("code-updated", {
@@ -575,6 +578,12 @@ function setupSocketHandlers(io) {
             fileData.language = language;
           }
           room.files.set(fileId, fileData);
+
+          // Save file to database for model feeding
+          HybridRoomController.saveFileToDatabase(socket.roomId, {
+            name: fileData.name,
+            content: content,
+          });
         } else {
           console.log(
             `File ${fileId} not found in room ${socket.roomId} files:`,

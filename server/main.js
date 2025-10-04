@@ -10,8 +10,10 @@ const { connectMongoDB } = require("./db/connection");
 const { setupSocketHandlers, getRoomStats } = require("./websocket/sockets");
 const { authenticateSocket } = require("./middleware/auth");
 const roomRoutes = require("./routes/roomRoutes");
-const UserRouter = require("./routes/UserRouter");
 const RoomsRouter = require("./routes/RoomsRouter");
+const UserRouter = require("./routes/UserRouter");
+const hybridRoomRoutes = require("./routes/hybridRoomRoutes");
+
 const { connect } = require("http2");
 
 // Create Express app and HTTP server
@@ -55,6 +57,8 @@ setupSocketHandlers(io);
 
 // API routes
 app.use("/api/rooms", roomRoutes);
+app.use("/api/Rooms", RoomsRouter); // Add the RoomsRouter for room creation
+app.use("/api/hybrid-rooms", hybridRoomRoutes); // Add hybrid room routes
 
 // Basic API routes
 app.get("/", (req, res) => {
@@ -65,16 +69,14 @@ app.get("/", (req, res) => {
   });
 });
 
-
-app.use('/public', UserRouter);
-app.use('/rooms', RoomsRouter);
-
+app.use("/public", UserRouter);
+app.use("/rooms", roomRoutes);
+app.use("/Room", RoomsRouter);
 
 app.get("/api/rooms", (req, res) => {
   const rooms = getRoomStats();
   res.json({ rooms });
 });
-
 
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {

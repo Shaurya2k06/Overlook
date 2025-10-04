@@ -9,7 +9,9 @@ const rooms = new Map();
 //   users: Map of userId -> { socketId, username, name, email },
 //   code: string,
 //   language: string,
-//   messages: array of chat messages
+//   messages: array of chat messages,
+//   files: Map of fileId -> file data,
+//   folders: Map of folderId -> folder data
 // }
 
 // Helper function to get room data or create new room
@@ -20,6 +22,8 @@ function getOrCreateRoom(roomId) {
       code: "",
       language: "javascript",
       messages: [],
+      files: new Map(), // fileId -> file data
+      folders: new Map(), // folderId -> folder data
     });
   }
   return rooms.get(roomId);
@@ -49,6 +53,48 @@ function getUserFromSocket(socket) {
 
 // Socket.IO connection handling
 function setupSocketHandlers(io) {
+  // Cleanup function to remove stale connections
+  function cleanupStaleConnections() {
+    for (const [roomId, room] of rooms.entries()) {
+      const staleUsers = [];
+
+      for (const [userId, userInfo] of room.users.entries()) {
+        const socket = io.sockets.sockets.get(userInfo.socketId);
+        if (!socket || !socket.connected) {
+          staleUsers.push(userId);
+        }
+      }
+
+      // Remove stale users
+      staleUsers.forEach((userId) => {
+        const userInfo = room.users.get(userId);
+        console.log(
+          `Cleaning up stale connection for user ${userId} in room ${roomId}`
+        );
+        room.users.delete(userId);
+
+        // Notify remaining users
+        if (room.users.size > 0) {
+          broadcastToRoom(io, roomId, "user-left", {
+            userId,
+            username: userInfo.username,
+            userCount: room.users.size,
+          });
+        }
+      });
+
+      // Delete empty rooms
+      if (room.users.size === 0) {
+        rooms.delete(roomId);
+        console.log(`Room ${roomId} deleted (empty after cleanup)`);
+      }
+    }
+  }
+
+  // Run cleanup every 30 seconds
+  setInterval(() => {
+    cleanupStaleConnections();
+  }, 30000);
   io.on("connection", (socket) => {
     console.log(`Socket connected: ${socket.id}`);
 
@@ -77,28 +123,41 @@ function setupSocketHandlers(io) {
         }
 
         const room = getOrCreateRoom(roomId);
+        console.log(
+          `Room ${roomId} current users:`,
+          Array.from(room.users.keys())
+        );
 
-        // Check if room is full (max 3 users)
-        if (room.users.size >= 3) {
-          socket.emit("room-full", {
-            message: "Room is full. Maximum 3 users allowed.",
+        // Check if user is already in the room (but allow reconnection)
+        const existingUser = room.users.get(userId);
+        if (existingUser) {
+          // User is already in room, update their socket ID (reconnection)
+          console.log(
+            `${user.name} reconnecting to room ${roomId} (old socket: ${existingUser.socketId}, new socket: ${socket.id})`
+          );
+          existingUser.socketId = socket.id;
+          room.users.set(userId, existingUser);
+        } else {
+          // Check if room is full (max 3 users) - only for new users
+          if (room.users.size >= 3) {
+            console.log(
+              `Room ${roomId} is full (${room.users.size} users) - rejecting new user ${user.name}`
+            );
+            socket.emit("room-full", {
+              message: "Room is full. Maximum 3 users allowed.",
+            });
+            return;
+          }
+
+          // Add new user to room
+          console.log(`Adding new user ${user.name} to room ${roomId}`);
+          room.users.set(userId, {
+            socketId: socket.id,
+            username: user.name, // Using name as username
+            name: user.name,
+            email: user.email,
           });
-          return;
         }
-
-        // Check if user is already in the room
-        if (room.users.has(userId)) {
-          socket.emit("error", { message: "User already in room" });
-          return;
-        }
-
-        // Add user to room
-        room.users.set(userId, {
-          socketId: socket.id,
-          username: user.name, // Using name as username
-          name: user.name,
-          email: user.email,
-        });
 
         socket.join(roomId);
 
@@ -123,21 +182,28 @@ function setupSocketHandlers(io) {
             username: user.username,
             name: user.name,
           })),
+          files: Array.from(room.files.values()),
+          folders: Array.from(room.folders.values()),
         });
 
-        // Notify other users in the room
-        broadcastToRoom(
-          io,
-          roomId,
-          "user-joined",
-          {
-            userId,
-            username: user.name,
-            name: user.name,
-            userCount: room.users.size,
-          },
-          userId
-        );
+        // Notify other users in the room (only for new users, not reconnections)
+        if (!existingUser) {
+          broadcastToRoom(
+            io,
+            roomId,
+            "user-joined",
+            {
+              userId,
+              username: user.name,
+              name: user.name,
+              userCount: room.users.size,
+            },
+            userId
+          );
+        } else {
+          // For reconnections, just send a reconnection notification
+          console.log(`${user.name} reconnected to room ${roomId}`);
+        }
       } catch (error) {
         console.error("Error joining room:", error);
         socket.emit("error", { message: "Failed to join room" });
@@ -258,6 +324,233 @@ function setupSocketHandlers(io) {
       }
     });
 
+    // File system events
+    socket.on("file-created", (data) => {
+      const { fileData, parentId, autoOpen } = data;
+      const user = getUserFromSocket(socket);
+
+      if (socket.roomId && user.userId) {
+        console.log(`${user.username} created file: ${fileData.name}`);
+
+        // Store file data in room with parentId
+        const room = rooms.get(socket.roomId);
+        if (room) {
+          // Store file with parentId for proper hierarchy
+          const fileWithParent = {
+            ...fileData,
+            parentId: parentId || "root",
+          };
+          room.files.set(fileData.id, fileWithParent);
+        }
+
+        // Broadcast to all users in the room (including sender for sync)
+        const broadcastData = {
+          fileData: {
+            ...fileData,
+            parentId: parentId || "root",
+          },
+          parentId: parentId || "root",
+          autoOpen,
+          createdBy: user.username,
+          createdByUserId: user.userId,
+        };
+        console.log("Broadcasting file-created event:", broadcastData);
+        io.to(socket.roomId).emit("file-created", broadcastData);
+      }
+    });
+
+    socket.on("folder-created", (data) => {
+      const { folderData, parentId } = data;
+      const user = getUserFromSocket(socket);
+
+      if (socket.roomId && user.userId) {
+        console.log(`${user.username} created folder: ${folderData.name}`);
+
+        // Store folder data in room with parentId
+        const room = rooms.get(socket.roomId);
+        if (room) {
+          // Store folder with parentId for proper hierarchy
+          const folderWithParent = {
+            ...folderData,
+            parentId: parentId || "root",
+          };
+          room.folders.set(folderData.id, folderWithParent);
+        }
+
+        // Broadcast to all users in the room (including sender for sync)
+        const broadcastData = {
+          folderData: {
+            ...folderData,
+            parentId: parentId || "root",
+          },
+          parentId: parentId || "root",
+          createdBy: user.username,
+          createdByUserId: user.userId,
+        };
+        console.log("Broadcasting folder-created event:", broadcastData);
+        io.to(socket.roomId).emit("folder-created", broadcastData);
+      }
+    });
+
+    socket.on("file-deleted", (data) => {
+      const { fileId, parentId } = data;
+      const user = getUserFromSocket(socket);
+
+      if (socket.roomId && user.userId) {
+        console.log(`${user.username} deleted file: ${fileId}`);
+
+        // Remove file data from room
+        const room = rooms.get(socket.roomId);
+        if (room) {
+          room.files.delete(fileId);
+        }
+
+        // Broadcast to all users in the room
+        io.to(socket.roomId).emit("file-deleted", {
+          fileId,
+          parentId,
+          deletedBy: user.username,
+          deletedByUserId: user.userId,
+        });
+      }
+    });
+
+    socket.on("folder-deleted", (data) => {
+      const { folderId, parentId } = data;
+      const user = getUserFromSocket(socket);
+
+      if (socket.roomId && user.userId) {
+        console.log(`${user.username} deleted folder: ${folderId}`);
+
+        // Remove folder data from room
+        const room = rooms.get(socket.roomId);
+        if (room) {
+          room.folders.delete(folderId);
+        }
+
+        // Broadcast to all users in the room
+        io.to(socket.roomId).emit("folder-deleted", {
+          folderId,
+          parentId,
+          deletedBy: user.username,
+          deletedByUserId: user.userId,
+        });
+      }
+    });
+
+    socket.on("file-renamed", (data) => {
+      const { fileId, newName } = data;
+      const user = getUserFromSocket(socket);
+
+      if (socket.roomId && user.userId) {
+        console.log(`${user.username} renamed file: ${fileId} to ${newName}`);
+
+        // Update file data in room
+        const room = rooms.get(socket.roomId);
+        if (room && room.files.has(fileId)) {
+          const fileData = room.files.get(fileId);
+          fileData.name = newName;
+          room.files.set(fileId, fileData);
+        }
+
+        // Broadcast to all users in the room
+        io.to(socket.roomId).emit("file-renamed", {
+          fileId,
+          newName,
+          renamedBy: user.username,
+          renamedByUserId: user.userId,
+        });
+      }
+    });
+
+    socket.on("folder-renamed", (data) => {
+      const { folderId, newName } = data;
+      const user = getUserFromSocket(socket);
+
+      if (socket.roomId && user.userId) {
+        console.log(
+          `${user.username} renamed folder: ${folderId} to ${newName}`
+        );
+
+        // Update folder data in room
+        const room = rooms.get(socket.roomId);
+        if (room && room.folders.has(folderId)) {
+          const folderData = room.folders.get(folderId);
+          folderData.name = newName;
+          room.folders.set(folderId, folderData);
+        }
+
+        // Broadcast to all users in the room
+        io.to(socket.roomId).emit("folder-renamed", {
+          folderId,
+          newName,
+          renamedBy: user.username,
+          renamedByUserId: user.userId,
+        });
+      }
+    });
+
+    // File content update event - for real-time collaborative editing
+    socket.on("file-content-updated", (data) => {
+      const { fileId, content, language } = data;
+      const user = getUserFromSocket(socket);
+
+      if (socket.roomId && user.userId) {
+        console.log(`${user.username} updated file content: ${fileId}`);
+
+        // Update file data in room
+        const room = rooms.get(socket.roomId);
+        if (room && room.files.has(fileId)) {
+          const fileData = room.files.get(fileId);
+          fileData.content = content;
+          if (language) {
+            fileData.language = language;
+          }
+          room.files.set(fileId, fileData);
+        }
+
+        // Broadcast to all users in the room (including sender for sync)
+        const broadcastData = {
+          fileId,
+          content,
+          language,
+          updatedBy: user.username,
+          updatedByUserId: user.userId,
+        };
+        console.log("Broadcasting file-content-updated event:", broadcastData);
+        io.to(socket.roomId).emit("file-content-updated", broadcastData);
+      }
+    });
+
+    // Typing indicator events
+    socket.on("user-typing", (data) => {
+      if (socket.roomId) {
+        broadcastToRoom(
+          io,
+          socket.roomId,
+          "user-typing",
+          {
+            username: data.username,
+          },
+          socket.userId
+        );
+      }
+    });
+
+    socket.on("user-stopped-typing", (data) => {
+      if (socket.roomId) {
+        broadcastToRoom(
+          io,
+          socket.roomId,
+          "user-stopped-typing",
+          {
+            username: data.username,
+          },
+          socket.userId
+        );
+      }
+    });
+
     // Handle disconnection
     socket.on("disconnect", () => {
       const roomId = socket.roomId;
@@ -266,21 +559,36 @@ function setupSocketHandlers(io) {
 
       if (roomId && rooms.has(roomId) && userId) {
         const room = rooms.get(roomId);
-        room.users.delete(userId);
 
-        console.log(`${username} (${userId}) left room ${roomId}`);
+        // Check if this is the same socket that's currently in the room
+        const currentUser = room.users.get(userId);
+        if (currentUser && currentUser.socketId === socket.id) {
+          // Only remove user if this is their current socket
+          room.users.delete(userId);
+          console.log(`${username} (${userId}) left room ${roomId}`);
 
-        // If room is empty, delete it
-        if (room.users.size === 0) {
-          rooms.delete(roomId);
-          console.log(`Room ${roomId} deleted (empty)`);
+          // If room is empty, delete it
+          if (room.users.size === 0) {
+            rooms.delete(roomId);
+            console.log(`Room ${roomId} deleted (empty)`);
+          } else {
+            // Notify remaining users
+            broadcastToRoom(io, roomId, "user-left", {
+              userId,
+              username,
+              userCount: room.users.size,
+            });
+          }
+        } else if (currentUser) {
+          // This is an old socket for a user who's still in the room with a different socket
+          console.log(
+            `Old socket disconnected for ${username} (${userId}) - user still in room with socket ${currentUser.socketId}`
+          );
         } else {
-          // Notify remaining users
-          broadcastToRoom(io, roomId, "user-left", {
-            userId,
-            username,
-            userCount: room.users.size,
-          });
+          // User is not in the room anymore, just log it
+          console.log(
+            `Socket disconnected for ${username} (${userId}) - user not in room`
+          );
         }
       }
     });

@@ -12,6 +12,11 @@ function Home() {
   const [isVisible, setIsVisible] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
+  const [pipelineProgress, setPipelineProgress] = useState(0);
+  const [isProcessing, setIsProcessing] = useState(true);
+  const [currentCode, setCurrentCode] = useState('');
+  const [vulnerabilitiesFound, setVulnerabilitiesFound] = useState(0);
+  const [vulnerabilitiesFixed, setVulnerabilitiesFixed] = useState(0);
 
   // Load Advercase font
   useEffect(() => {
@@ -44,22 +49,106 @@ function Home() {
       });
     }, 20);
 
-    const agentInterval = setInterval(() => {
-      setActiveAgent(prev => (prev + 1) % 4);
-    }, 3000);
+    // Enhanced pipeline simulation
+    const pipelineInterval = setInterval(() => {
+      if (isProcessing) {
+        setActiveAgent(prev => {
+          const next = (prev + 1) % 4;
+          
+          // Update progress for current agent
+          agents[prev].progress = Math.min(agents[prev].progress + 25, 100);
+          
+          // Update step when completing full cycle
+          if (next === 0) {
+            setCurrentStep(prevStep => {
+              const nextStep = (prevStep + 1) % codeSteps.length;
+              
+              // Update vulnerabilities counters
+              if (nextStep === 1) {
+                setVulnerabilitiesFound(2);
+                setVulnerabilitiesFixed(0);
+              } else if (nextStep === 2) {
+                setVulnerabilitiesFixed(1);
+              } else if (nextStep === 3) {
+                setVulnerabilitiesFixed(2);
+              }
+              
+              return nextStep;
+            });
+          }
+          
+          return next;
+        });
+        
+        setPipelineProgress(prev => (prev + 1) % 100);
+      }
+    }, 1500);
 
     return () => {
       clearInterval(scoreInterval);
-      clearInterval(agentInterval);
+      clearInterval(pipelineInterval);
     };
-  }, []);
+  }, [isProcessing]);
 
   const agents = [
-    { name: "Generation Agent", icon: Code, color: "#00EFA6", status: "Generating secure code..." },
-    { name: "Debugging Agent", icon: Terminal, color: "#60A5FA", status: "Analyzing for errors..." },
-    { name: "Security Agent", icon: Shield, color: "#F59E0B", status: "Scanning vulnerabilities..." },
-    { name: "Red Team Agent", icon: AlertTriangle, color: "#EF4444", status: "Testing exploits..." }
+    { 
+      name: "Generation Agent", 
+      icon: Code, 
+      color: "#00EFA6", 
+      status: "Generating secure code...",
+      progress: 0,
+      task: "Creating authentication function"
+    },
+    { 
+      name: "Debugging Agent", 
+      icon: Terminal, 
+      color: "#60A5FA", 
+      status: "Analyzing for errors...",
+      progress: 0,
+      task: "Scanning syntax & logic errors"
+    },
+    { 
+      name: "Security Agent", 
+      icon: Shield, 
+      color: "#F59E0B", 
+      status: "Scanning vulnerabilities...",
+      progress: 0,
+      task: "Detecting SQL injection risks"
+    },
+    { 
+      name: "Red Team Agent", 
+      icon: AlertTriangle, 
+      color: "#EF4444", 
+      status: "Testing exploits...",
+      progress: 0,
+      task: "Simulating attack vectors"
+    }
   ];
+
+  const codeSteps = [
+    {
+      input: `// User Input\nfunction login(email, password) {\n  // Generate login code\n}`,
+      vulnerabilities: [],
+      stage: "Input"
+    },
+    {
+      input: `function login(email, password) {\n  const query = \`SELECT * FROM users \n    WHERE email='\${email}'\`;\n  return db.query(query);\n}`,
+      vulnerabilities: ["SQL Injection", "Password Not Hashed"],
+      stage: "Generated Code"
+    },
+    {
+      input: `function login(email, password) {\n  const query = \`SELECT * FROM users \n    WHERE email=?\`;\n  const hashedPwd = bcrypt.hash(password);\n  return db.query(query, [email]);\n}`,
+      vulnerabilities: ["Password Verification Missing"],
+      stage: "After Security Scan"
+    },
+    {
+      input: `function login(email, password) {\n  const query = \`SELECT * FROM users \n    WHERE email=?\`;\n  const user = await db.query(query, [email]);\n  return bcrypt.compare(password, user.hash);\n}`,
+      vulnerabilities: [],
+      stage: "Secure Code"
+    }
+  ];
+
+  const [currentStep, setCurrentStep] = useState(0);
 
   return (
     <div className="min-h-screen bg-black text-white relative overflow-hidden">
@@ -131,71 +220,228 @@ function Home() {
         </div>
       </section>
 
-      {/* SECTION 2: MULTI-AGENT PIPELINE */}
+      {/* SECTION 2: INTERACTIVE MULTI-AGENT PIPELINE */}
       <section id="pipeline" className="relative min-h-screen flex items-center justify-center py-24 bg-black border-t border-white/10 snap-start">
         <div className="container mx-auto px-8">
-          <div className="max-w-6xl mx-auto">
-            <h2 className="text-4xl font-light mb-12 text-center" style={{ fontFamily: "Advercase, monospace" }}>
-              <TextAnimate animation="slideUp" by="word">Multi-Agent Security Pipeline</TextAnimate>
+          <div className="max-w-7xl mx-auto">
+            <h2 className="text-4xl font-light mb-16 text-center" style={{ fontFamily: "Advercase, monospace" }}>
+              <TextAnimate animation="slideUp" by="word">Interactive Security Pipeline</TextAnimate>
             </h2>
             
-            <div className="bg-black/60 border-2 border-white/20 p-8 relative overflow-hidden">
-              <div className="absolute inset-0 border-t-4 border-[#00EFA6]" style={{ width: '30%', animation: 'border-flow 3s linear infinite' }} />
+            {/* Pipeline Controls */}
+            <div className="flex justify-center mb-12">
+              <div className="flex items-center gap-4 px-6 py-3 border-2 border-white/20 bg-black/60">
+                <button
+                  onClick={() => setIsProcessing(!isProcessing)}
+                  className={`px-4 py-2 border-2 transition-all ${
+                    isProcessing 
+                      ? 'border-orange-400 text-orange-400 hover:bg-orange-400/10' 
+                      : 'border-[#00EFA6] text-[#00EFA6] hover:bg-[#00EFA6]/10'
+                  }`}
+                  style={{ fontFamily: "Advercase, monospace" }}
+                >
+                  {isProcessing ? 'PAUSE' : 'PLAY'}
+                </button>
+                <button
+                  onClick={() => {
+                    setCurrentStep(0);
+                    setActiveAgent(0);
+                    setVulnerabilitiesFound(0);
+                    setVulnerabilitiesFixed(0);
+                    agents.forEach(agent => agent.progress = 0);
+                  }}
+                  className="px-4 py-2 border-2 border-white/20 text-white hover:bg-white/10 transition-all"
+                  style={{ fontFamily: "Advercase, monospace" }}
+                >
+                  RESTART
+                </button>
+                <div className="flex items-center gap-2 ml-4">
+                  <div className="text-xs text-gray-400 uppercase">Step:</div>
+                  <div className="text-sm text-[#00EFA6]" style={{ fontFamily: "Advercase, monospace" }}>
+                    {currentStep + 1}/4
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Agent Pipeline */}
-                <div>
-                  <h3 className="text-sm uppercase tracking-widest text-gray-400 mb-6" style={{ fontFamily: "Advercase, monospace" }}>Active Agents</h3>
-                  <div className="space-y-4">
+              {/* Code Flow Visualization */}
+              <div className="lg:col-span-2">
+                <h3 className="text-sm uppercase tracking-widest text-gray-400 mb-6" style={{ fontFamily: "Advercase, monospace" }}>
+                  Live Code Processing
+                </h3>
+                
+                {/* Code Display */}
+                <div className="bg-black border-2 border-white/20 p-6 mb-6 relative overflow-hidden">
+                  <div className="flex items-center gap-2 mb-4 pb-4 border-b border-white/20">
+                    <div className="flex gap-2">
+                      <div className="w-3 h-3 rounded-full bg-red-500" />
+                      <div className="w-3 h-3 rounded-full bg-yellow-500" />
+                      <div className="w-3 h-3 rounded-full bg-green-500" />
+                    </div>
+                    <span className="text-gray-400 text-xs ml-4">secure_login.js</span>
+                    <div className="ml-auto flex items-center gap-2">
+                      <div className="text-xs text-gray-400">{codeSteps[currentStep].stage}</div>
+                      {isProcessing && <div className="w-2 h-2 bg-[#00EFA6] rounded-full animate-pulse" />}
+                    </div>
+                  </div>
+                  
+                  <pre className="text-sm text-white font-mono leading-relaxed">
+                    {codeSteps[currentStep].input}
+                  </pre>
+                  
+                  {/* Vulnerability Indicators */}
+                  {codeSteps[currentStep].vulnerabilities.length > 0 && (
+                    <div className="absolute top-4 right-4 space-y-1">
+                      {codeSteps[currentStep].vulnerabilities.map((vuln, idx) => (
+                        <div key={idx} className="bg-red-500 text-white text-xs px-2 py-1 uppercase tracking-wide animate-pulse">
+                          ⚠ {vuln}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {/* Success Indicator */}
+                  {codeSteps[currentStep].vulnerabilities.length === 0 && currentStep > 0 && (
+                    <div className="absolute top-4 right-4 bg-[#00EFA6] text-black text-xs px-3 py-1 uppercase tracking-wide">
+                      ✓ SECURE
+                    </div>
+                  )}
+                </div>
+
+                {/* Process Flow Diagram */}
+                <div className="relative">
+                  <h4 className="text-xs text-gray-400 uppercase mb-4">Agent Processing Flow</h4>
+                  <div className="flex items-center justify-between">
                     {agents.map((agent, idx) => {
                       const Icon = agent.icon;
                       const isActive = idx === activeAgent;
-                      const isCompleted = idx < activeAgent;
+                      const isCompleted = idx < activeAgent || (idx === activeAgent && agents[idx].progress === 100);
                       
                       return (
-                        <div 
-                          key={idx}
-                          className={`flex items-center gap-4 p-4 border-2 transition-all duration-500 ${
-                            isActive ? 'border-[#00EFA6] bg-[#00EFA6]/10 scale-105' : isCompleted ? 'border-white/20 bg-white/5' : 'border-white/10 opacity-50'
-                          }`}
-                        >
-                          <div className={`p-2 border-2 ${isActive ? 'border-[#00EFA6]' : 'border-white/20'}`}>
-                            <Icon className="w-5 h-5" style={{ color: isActive || isCompleted ? agent.color : '#666' }} />
+                        <div key={idx} className="flex flex-col items-center relative">
+                          {/* Connection Line */}
+                          {idx < agents.length - 1 && (
+                            <div className="absolute top-8 left-full w-full h-0.5 bg-white/20">
+                              <div 
+                                className="h-full bg-[#00EFA6] transition-all duration-500"
+                                style={{ 
+                                  width: isCompleted ? '100%' : isActive ? '50%' : '0%' 
+                                }}
+                              />
+                            </div>
+                          )}
+                          
+                          {/* Agent Node */}
+                          <div className={`w-16 h-16 border-2 flex items-center justify-center transition-all duration-500 ${
+                            isActive 
+                              ? 'border-[#00EFA6] bg-[#00EFA6]/20 scale-110' 
+                              : isCompleted 
+                                ? 'border-[#00EFA6] bg-[#00EFA6]/10' 
+                                : 'border-white/20 bg-black'
+                          }`}>
+                            <Icon 
+                              className="w-8 h-8" 
+                              style={{ color: isActive || isCompleted ? agent.color : '#666' }} 
+                            />
                           </div>
-                          <div className="flex-1">
-                            <div className="text-sm font-medium text-white">{agent.name}</div>
-                            {isActive && <div className="text-xs text-gray-400 mt-1">{agent.status}</div>}
+                          
+                          {/* Agent Info */}
+                          <div className="mt-3 text-center max-w-24">
+                            <div className="text-xs text-white mb-1">{agent.name.split(' ')[0]}</div>
+                            {isActive && (
+                              <div className="text-xs text-gray-400">{agent.task}</div>
+                            )}
                           </div>
-                          {isCompleted && <CheckCircle className="w-5 h-5 text-[#00EFA6]" />}
-                          {isActive && <Activity className="w-5 h-5 text-[#00EFA6] animate-pulse" />}
+                          
+                          {/* Progress Bar */}
+                          {isActive && (
+                            <div className="mt-2 w-20 h-1 bg-white/20">
+                              <div 
+                                className="h-full bg-[#00EFA6] transition-all duration-300"
+                                style={{ width: `${agents[idx].progress}%` }}
+                              />
+                            </div>
+                          )}
+                          
+                          {/* Completion Check */}
+                          {isCompleted && (
+                            <CheckCircle className="w-4 h-4 text-[#00EFA6] mt-2" />
+                          )}
                         </div>
                       );
                     })}
                   </div>
                 </div>
+              </div>
 
-                {/* Security Dashboard */}
-                <div>
-                  <h3 className="text-sm uppercase tracking-widest text-gray-400 mb-6" style={{ fontFamily: "Advercase, monospace" }}>Security Score</h3>
-                  <div className="text-center p-8 border-2 border-[#00EFA6]/30 bg-[#00EFA6]/10 mb-6">
-                    <div className="text-7xl font-light text-[#00EFA6] mb-2">{securityScore}</div>
-                    <div className="text-sm text-gray-400 uppercase">Security Rating</div>
+              {/* Live Security Dashboard */}
+              <div>
+                <h3 className="text-sm uppercase tracking-widest text-gray-400 mb-6" style={{ fontFamily: "Advercase, monospace" }}>
+                  Security Dashboard
+                </h3>
+                
+                {/* Real-time Security Score */}
+                <div className="text-center p-6 border-2 border-[#00EFA6]/30 bg-[#00EFA6]/10 mb-6">
+                  <div className="text-5xl font-light text-[#00EFA6] mb-2">{securityScore}</div>
+                  <div className="text-sm text-gray-400 uppercase">Security Score</div>
+                  <div className="mt-2 h-2 bg-black/50">
+                    <div 
+                      className="h-full bg-[#00EFA6] transition-all duration-500"
+                      style={{ width: `${securityScore}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Vulnerability Tracking */}
+                <div className="space-y-4 mb-6">
+                  <div className="p-4 border-2 border-red-400/30 bg-red-400/10">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-xs text-gray-400 uppercase">Vulnerabilities Found</div>
+                      <AlertTriangle className="w-4 h-4 text-red-400" />
+                    </div>
+                    <div className="text-2xl font-light text-red-400">{vulnerabilitiesFound}</div>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="p-4 border-2 border-white/20 bg-white/5">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Shield className="w-4 h-4 text-[#00EFA6]" />
-                        <div className="text-xs text-gray-400 uppercase">Vulnerabilities</div>
-                      </div>
-                      <div className="text-2xl font-light text-white">0</div>
+                  <div className="p-4 border-2 border-[#00EFA6]/30 bg-[#00EFA6]/10">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-xs text-gray-400 uppercase">Vulnerabilities Fixed</div>
+                      <Shield className="w-4 h-4 text-[#00EFA6]" />
                     </div>
-                    <div className="p-4 border-2 border-white/20 bg-white/5">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Zap className="w-4 h-4 text-blue-400" />
-                        <div className="text-xs text-gray-400 uppercase">Speed</div>
+                    <div className="text-2xl font-light text-[#00EFA6]">{vulnerabilitiesFixed}</div>
+                  </div>
+                </div>
+
+                {/* Processing Stats */}
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="p-3 border-2 border-white/20 bg-white/5">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Zap className="w-3 h-3 text-blue-400" />
+                      <div className="text-xs text-gray-400 uppercase">Processing Speed</div>
+                    </div>
+                    <div className="text-lg font-light text-white">1.2s</div>
+                  </div>
+                  
+                  <div className="p-3 border-2 border-white/20 bg-white/5">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Activity className="w-3 h-3 text-green-400" />
+                      <div className="text-xs text-gray-400 uppercase">Lines Analyzed</div>
+                    </div>
+                    <div className="text-lg font-light text-white">{(currentStep + 1) * 156}</div>
+                  </div>
+                </div>
+
+                {/* Agent Status */}
+                <div className="mt-6">
+                  <h4 className="text-xs text-gray-400 uppercase mb-3">Current Agent Status</h4>
+                  <div className="p-4 border-2 border-white/20 bg-black/40">
+                    <div className="flex items-center gap-3">
+                      <div className="w-3 h-3 rounded-full bg-[#00EFA6] animate-pulse" />
+                      <div>
+                        <div className="text-sm text-white">{agents[activeAgent].name}</div>
+                        <div className="text-xs text-gray-400">{agents[activeAgent].status}</div>
                       </div>
-                      <div className="text-2xl font-light text-white">2.3s</div>
                     </div>
                   </div>
                 </div>
@@ -448,20 +694,7 @@ function Home() {
                 </button>
               </div>
 
-              <div className="flex flex-wrap items-center justify-center gap-8 pt-8 border-t border-white/20">
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="w-5 h-5 text-[#00EFA6]" />
-                  <span className="text-sm text-gray-400">No Credit Card Required</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="w-5 h-5 text-[#00EFA6]" />
-                  <span className="text-sm text-gray-400">Free for Developers</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="w-5 h-5 text-[#00EFA6]" />
-                  <span className="text-sm text-gray-400">Open Source</span>
-                </div>
-              </div>
+              
             </div>
           </div>
         </div>

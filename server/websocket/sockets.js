@@ -123,8 +123,12 @@ function setupSocketHandlers(io) {
         }
 
         const room = getOrCreateRoom(roomId);
+
+        // Run cleanup immediately before checking room capacity
+        cleanupStaleConnections();
+
         console.log(
-          `Room ${roomId} current users:`,
+          `Room ${roomId} current users after cleanup:`,
           Array.from(room.users.keys())
         );
 

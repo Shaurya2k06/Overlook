@@ -14,7 +14,9 @@ function Dashboard() {
       try {
         const parsedUser = JSON.parse(savedUser);
         return {
-          id: `user_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+          id:
+            parsedUser.id ||
+            `user_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
           username: parsedUser.username || "",
         };
       } catch (error) {
@@ -22,19 +24,25 @@ function Dashboard() {
       }
     }
     // Fallback to default user with empty username
-    return {
+    const newUser = {
       id: `user_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
       username: "",
     };
+    // Save the new user to localStorage
+    localStorage.setItem("overlook_user", JSON.stringify(newUser));
+    return newUser;
   });
 
   // Create a new room and navigate to it
   const createRoom = async () => {
     try {
-      // Save username to localStorage before navigating (ID will be generated fresh each session)
+      // Save both username AND id to localStorage for persistence
       localStorage.setItem(
         "overlook_user",
-        JSON.stringify({ username: user.username })
+        JSON.stringify({
+          id: user.id,
+          username: user.username,
+        })
       );
 
       const response = await axios.post(`${API_BASE_URL}/rooms/create`);
@@ -50,10 +58,13 @@ function Dashboard() {
 
   // Join an existing room and navigate to it
   const joinRoom = async (roomId) => {
-    // Save username to localStorage before navigating (ID will be generated fresh each session)
+    // Save both username AND id to localStorage for persistence
     localStorage.setItem(
       "overlook_user",
-      JSON.stringify({ username: user.username })
+      JSON.stringify({
+        id: user.id,
+        username: user.username,
+      })
     );
 
     // Navigate directly to the room - the Editor component will handle joining

@@ -13,7 +13,7 @@ import {
   Clock, 
   Wifi, 
   WifiOff,
-  Copy,
+
   LogOut,
   Eye,
   Code

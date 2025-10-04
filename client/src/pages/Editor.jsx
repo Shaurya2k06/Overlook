@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
 import axios from "axios";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import { Copy } from "lucide-react";
 import {
   Terminal,
@@ -51,12 +52,12 @@ function Editor() {
     downlink: 0,
     effectiveType: "unknown",
   });
-  const [wifiSpeed, setWifiSpeed] = useState({
+  const [_wifiSpeed, setWifiSpeed] = useState({
     download: 0,
     upload: 0,
     ping: 0,
   });
-  const [showCursor, setShowCursor] = useState(true);
+  const [_showCursor, setShowCursor] = useState(true);
   const [terminalOutput, setTerminalOutput] = useState([]);
   const [isTerminalVisible, setIsTerminalVisible] = useState(false);
   const [auditLogs, setAuditLogs] = useState([]);
@@ -86,6 +87,39 @@ function Editor() {
     localStorage.setItem("overlook_user", JSON.stringify(newUser));
     return newUser;
   });
+
+  // Add terminal notification helper - moved up to avoid temporal dead zone
+  const addTerminalNotification = useCallback((message, type = "info") => {
+    const notification = {
+      id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      message,
+      type,
+      timestamp: new Date().toLocaleTimeString("en-US", { hour12: false }),
+    };
+    setTerminalOutput((prev) => [...prev, notification]);
+    setIsTerminalVisible(true);
+
+    // Also add to audit logs for system output
+    addToAuditLog(message, type);
+
+    // Auto-close after 5 seconds for non-error messages
+    if (type !== "error") {
+      setTimeout(() => {
+        setIsTerminalVisible(false);
+      }, 5000);
+    }
+  }, []);
+
+  // Add system output to audit logs
+  const addToAuditLog = useCallback((message, type = "info") => {
+    const logEntry = {
+      id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      message,
+      type,
+      timestamp: new Date().toLocaleTimeString("en-US", { hour12: false }),
+    };
+    setAuditLogs((prev) => [...prev.slice(-50), logEntry]); // Keep last 50 entries
+  }, []);
 
   // Get real system information
   const getRealSystemInfo = () => {
@@ -119,7 +153,7 @@ function Editor() {
           effectiveType: connection.effectiveType || "unknown",
         }));
       }
-    } catch (error) {
+    } catch {
       console.log("Performance API not supported");
     }
   };
@@ -190,6 +224,7 @@ function Editor() {
 
     newSocket.on("room-joined", (data) => {
       console.log("Joined room:", data);
+      console.log("Room participants:", data.users);
       setParticipants(data.users || []);
       setIsJoining(false);
       setJoinError(null);
@@ -199,6 +234,16 @@ function Editor() {
         `Successfully joined room ${data.roomId}`,
         "success"
       );
+
+      // Show toast notification for successful room join
+      toast.success(`Successfully joined room ${data.roomId}`, {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
 
       // Sync file system data if available
       if (data.files || data.folders) {
@@ -217,14 +262,38 @@ function Editor() {
 
     newSocket.on("user-joined", (data) => {
       console.log("User joined:", data);
-      setParticipants((prev) => [
-        ...prev,
-        {
-          userId: data.userId,
-          username: data.username,
-          name: data.name,
-        },
-      ]);
+      setParticipants((prev) => {
+        // Check if user already exists to prevent duplicates
+        const userExists = prev.some((p) => p.userId === data.userId);
+        if (userExists) {
+          console.log(
+            "User already exists in participants list:",
+            data.username
+          );
+          return prev;
+        }
+
+        const newParticipants = [
+          ...prev,
+          {
+            userId: data.userId,
+            username: data.username,
+            name: data.name,
+          },
+        ];
+        console.log("Updated participants count:", newParticipants.length);
+        return newParticipants;
+      });
+
+      // Show toast notification for user joined
+      toast.success(`${data.username} joined the room`, {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
 
       // Show user joined notification in terminal
       addTerminalNotification(`${data.username} joined the room`, "info");
@@ -233,6 +302,16 @@ function Editor() {
     newSocket.on("user-left", (data) => {
       console.log("User left:", data);
       setParticipants((prev) => prev.filter((p) => p.userId !== data.userId));
+
+      // Show toast notification for user left
+      toast.warning(`${data.username} left the room`, {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
 
       // Show user left notification in terminal
       addTerminalNotification(`${data.username} left the room`, "warning");
@@ -263,6 +342,16 @@ function Editor() {
             },
           ];
         }
+      });
+
+      // Show toast notification for user reconnected
+      toast.info(`${data.username} reconnected to the room`, {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
       });
 
       // Show user reconnected notification in terminal
@@ -369,7 +458,7 @@ function Editor() {
     return () => {
       newSocket.close();
     };
-  }, [roomId, user.id, user.username]);
+  }, [roomId, user.id, user.username, addTerminalNotification]);
 
   // Add real-time monitoring
   useEffect(() => {
@@ -466,7 +555,15 @@ function Editor() {
       setJoinError("No room ID provided in URL");
       setIsJoining(false);
     }
-  }, [roomId, socket, isConnected, joinRoom, user.id, user.username]);
+  }, [
+    roomId,
+    socket,
+    isConnected,
+    joinRoom,
+    user.id,
+    user.username,
+    addTerminalNotification,
+  ]);
 
   // Leave room
   const leaveRoom = async () => {
@@ -562,7 +659,7 @@ function Editor() {
   };
 
   // Update username
-  const handleUsernameChange = (e) => {
+  const _handleUsernameChange = (e) => {
     const updatedUser = {
       ...user,
       username: e.target.value,
@@ -595,39 +692,6 @@ function Editor() {
   // Handle terminal output from global terminal
   const handleTerminalOutput = (output) => {
     setTerminalOutput((prev) => [...prev, output]);
-  };
-
-  // Add terminal notification helper
-  const addTerminalNotification = (message, type = "info") => {
-    const notification = {
-      id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      message,
-      type,
-      timestamp: new Date().toLocaleTimeString("en-US", { hour12: false }),
-    };
-    setTerminalOutput((prev) => [...prev, notification]);
-    setIsTerminalVisible(true);
-
-    // Also add to audit logs for system output
-    addToAuditLog(message, type);
-
-    // Auto-close after 5 seconds for non-error messages
-    if (type !== "error") {
-      setTimeout(() => {
-        setIsTerminalVisible(false);
-      }, 5000);
-    }
-  };
-
-  // Add system output to audit logs
-  const addToAuditLog = (message, type = "info") => {
-    const logEntry = {
-      id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      message,
-      type,
-      timestamp: new Date().toLocaleTimeString("en-US", { hour12: false }),
-    };
-    setAuditLogs((prev) => [...prev.slice(-50), logEntry]); // Keep last 50 entries
   };
 
   // Loading state
@@ -912,6 +976,26 @@ function Editor() {
           terminalOutput={terminalOutput}
           isVisible={isTerminalVisible}
           onVisibilityChange={setIsTerminalVisible}
+        />
+
+        {/* Toast Container */}
+        <ToastContainer
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="dark"
+          toastStyle={{
+            backgroundColor: "#1a1a1a",
+            color: "#00ff00",
+            border: "1px solid #00ff0040",
+            fontFamily: "'Courier New', Consolas, Monaco, monospace",
+          }}
         />
       </div>
     </FileSystemProvider>

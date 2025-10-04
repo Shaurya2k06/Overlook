@@ -7,7 +7,7 @@
 
   color-scheme: dark;
   color: rgba(255, 255, 255, 0.87);
-  background-color: #111827;
+  background-color: #030303;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -23,4 +23,64 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  background-color: #030303;
+}
+
+/* Custom Animations */
+@keyframes grid {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(60px);
+  }
+}
+
+@keyframes pulse-slow {
+  0%, 100% {
+    opacity: 0.1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.2;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes border-flow {
+  0% {
+    left: -30%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+@keyframes pulse-border {
+  0%, 100% {
+    border-color: rgba(0, 239, 166, 0);
+    transform: scale(1);
+  }
+  50% {
+    border-color: rgba(0, 239, 166, 0.3);
+    transform: scale(1.02);
+  }
+}
+
+@keyframes gradient-x {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 8s ease-in-out infinite;
+}
+
+.animate-gradient-x {
+  background-size: 200% 200%;
+  animation: gradient-x 15s ease infinite;
 }

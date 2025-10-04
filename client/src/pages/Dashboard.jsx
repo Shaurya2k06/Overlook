@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import GlobalTerminal from "../components/GlobalTerminal";
 
-const API_BASE_URL = "http://localhost:3001/api";
+const API_BASE_URL = "https://overlook-6yrs.onrender.com/api";
 
 function Dashboard() {
   const navigate = useNavigate();

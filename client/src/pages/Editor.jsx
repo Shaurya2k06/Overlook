@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
 import axios from "axios";
-import { toast } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import { Copy } from "lucide-react";
 import {
   Terminal,
@@ -13,7 +14,6 @@ import {
   Clock,
   Wifi,
   WifiOff,
-
   LogOut,
   Eye,
   Code,
@@ -30,9 +30,10 @@ import RoomChat from "../components/RoomChat";
 import fetchData, { getSocketUrl } from "../../service/backendApi";
 
 // Dynamic API and Socket URLs
-const API_BASE_URL = import.meta.env.MODE === 'production' 
-  ? 'https://overlook-6yrs.onrender.com/api' 
-  : 'http://localhost:3001/api';
+const API_BASE_URL =
+  import.meta.env.MODE === "production"
+    ? "https://overlook-6yrs.onrender.com/api"
+    : "http://localhost:3001/api";
 const SOCKET_URL = getSocketUrl();
 
 function Editor() {
@@ -57,12 +58,12 @@ function Editor() {
     downlink: 0,
     effectiveType: "unknown",
   });
-  const [wifiSpeed, setWifiSpeed] = useState({
+  const [_wifiSpeed, setWifiSpeed] = useState({
     download: 0,
     upload: 0,
     ping: 0,
   });
-  const [showCursor, setShowCursor] = useState(true);
+  const [_showCursor, setShowCursor] = useState(true);
   const [terminalOutput, setTerminalOutput] = useState([]);
   const [isTerminalVisible, setIsTerminalVisible] = useState(false);
   const [auditLogs, setAuditLogs] = useState([]);
@@ -92,6 +93,39 @@ function Editor() {
     localStorage.setItem("overlook_user", JSON.stringify(newUser));
     return newUser;
   });
+
+  // Add terminal notification helper - moved up to avoid temporal dead zone
+  const addTerminalNotification = useCallback((message, type = "info") => {
+    const notification = {
+      id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      message,
+      type,
+      timestamp: new Date().toLocaleTimeString("en-US", { hour12: false }),
+    };
+    setTerminalOutput((prev) => [...prev, notification]);
+    setIsTerminalVisible(true);
+
+    // Also add to audit logs for system output
+    addToAuditLog(message, type);
+
+    // Auto-close after 5 seconds for non-error messages
+    if (type !== "error") {
+      setTimeout(() => {
+        setIsTerminalVisible(false);
+      }, 5000);
+    }
+  }, []);
+
+  // Add system output to audit logs
+  const addToAuditLog = useCallback((message, type = "info") => {
+    const logEntry = {
+      id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      message,
+      type,
+      timestamp: new Date().toLocaleTimeString("en-US", { hour12: false }),
+    };
+    setAuditLogs((prev) => [...prev.slice(-50), logEntry]); // Keep last 50 entries
+  }, []);
 
   // Get real system information
   const getRealSystemInfo = () => {
@@ -125,7 +159,7 @@ function Editor() {
           effectiveType: connection.effectiveType || "unknown",
         }));
       }
-    } catch (error) {
+    } catch {
       console.log("Performance API not supported");
     }
   };
@@ -198,17 +232,23 @@ function Editor() {
       console.log("Joined room:", data);
       console.log("Participants received:", data.users);
       console.log("Current user:", user);
-      
+
       // Set participants from server data
       const participantsList = data.users || [];
       setParticipants(participantsList);
-      
+
       setIsJoining(false);
       setJoinError(null);
 
       // Show success notification in terminal
-      addTerminalNotification(`Successfully joined room ${data.roomId}`, 'success');
-      addTerminalNotification(`Room has ${participantsList.length} participant(s)`, 'info');
+      addTerminalNotification(
+        `Successfully joined room ${data.roomId}`,
+        "success"
+      );
+      addTerminalNotification(
+        `Room has ${participantsList.length} participant(s)`,
+        "info"
+      );
 
       // Sync file system data if available
       if (data.files || data.folders) {
@@ -229,13 +269,16 @@ function Editor() {
       console.log("User joined:", data);
       setParticipants((prev) => {
         // Check if user already exists to prevent duplicates
-        const existingUser = prev.find(p => p.userId === data.userId);
-        if (existingUser) {
-          console.log("User already in participants list:", data.userId);
+        const userExists = prev.some((p) => p.userId === data.userId);
+        if (userExists) {
+          console.log(
+            "User already exists in participants list:",
+            data.username
+          );
           return prev;
         }
-        
-        return [
+
+        const newParticipants = [
           ...prev,
           {
             userId: data.userId,
@@ -243,6 +286,18 @@ function Editor() {
             name: data.name,
           },
         ];
+        console.log("Updated participants count:", newParticipants.length);
+        return newParticipants;
+      });
+
+      // Show toast notification for user joined
+      toast.success(`${data.username} joined the room`, {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
       });
 
       // Show user joined notification in terminal
@@ -252,6 +307,16 @@ function Editor() {
     newSocket.on("user-left", (data) => {
       console.log("User left:", data);
       setParticipants((prev) => prev.filter((p) => p.userId !== data.userId));
+
+      // Show toast notification for user left
+      toast.warning(`${data.username} left the room`, {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
 
       // Show user left notification in terminal
       addTerminalNotification(`${data.username} left the room`, "warning");
@@ -282,6 +347,16 @@ function Editor() {
             },
           ];
         }
+      });
+
+      // Show toast notification for user reconnected
+      toast.info(`${data.username} reconnected to the room`, {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
       });
 
       // Show user reconnected notification in terminal
@@ -388,7 +463,7 @@ function Editor() {
     return () => {
       newSocket.close();
     };
-  }, [roomId, user.id, user.username]);
+  }, [roomId, user.id, user.username, addTerminalNotification]);
 
   // Add real-time monitoring
   useEffect(() => {
@@ -485,7 +560,15 @@ function Editor() {
       setJoinError("No room ID provided in URL");
       setIsJoining(false);
     }
-  }, [roomId, socket, isConnected, joinRoom, user.id, user.username]);
+  }, [
+    roomId,
+    socket,
+    isConnected,
+    joinRoom,
+    user.id,
+    user.username,
+    addTerminalNotification,
+  ]);
 
   // Leave room
   const leaveRoom = async () => {
@@ -581,7 +664,7 @@ function Editor() {
   };
 
   // Update username
-  const handleUsernameChange = (e) => {
+  const _handleUsernameChange = (e) => {
     const updatedUser = {
       ...user,
       username: e.target.value,
@@ -614,39 +697,6 @@ function Editor() {
   // Handle terminal output from global terminal
   const handleTerminalOutput = (output) => {
     setTerminalOutput((prev) => [...prev, output]);
-  };
-
-  // Add terminal notification helper
-  const addTerminalNotification = (message, type = "info") => {
-    const notification = {
-      id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      message,
-      type,
-      timestamp: new Date().toLocaleTimeString("en-US", { hour12: false }),
-    };
-    setTerminalOutput((prev) => [...prev, notification]);
-    setIsTerminalVisible(true);
-
-    // Also add to audit logs for system output
-    addToAuditLog(message, type);
-
-    // Auto-close after 5 seconds for non-error messages
-    if (type !== "error") {
-      setTimeout(() => {
-        setIsTerminalVisible(false);
-      }, 5000);
-    }
-  };
-
-  // Add system output to audit logs
-  const addToAuditLog = (message, type = "info") => {
-    const logEntry = {
-      id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-      message,
-      type,
-      timestamp: new Date().toLocaleTimeString("en-US", { hour12: false }),
-    };
-    setAuditLogs((prev) => [...prev.slice(-50), logEntry]); // Keep last 50 entries
   };
 
   // Loading state
@@ -934,11 +984,31 @@ function Editor() {
         />
 
         {/* Room Chat */}
-        <RoomChat 
+        <RoomChat
           socket={socket}
           user={user}
           participants={participants}
           roomId={roomId}
+        />
+
+        {/* Toast Container */}
+        <ToastContainer
+          position="top-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="dark"
+          toastStyle={{
+            backgroundColor: "#1a1a1a",
+            color: "#00ff00",
+            border: "1px solid #00ff0040",
+            fontFamily: "'Courier New', Consolas, Monaco, monospace",
+          }}
         />
       </div>
     </FileSystemProvider>

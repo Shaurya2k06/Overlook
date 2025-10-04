@@ -187,7 +187,10 @@ function setupSocketHandlers(io) {
         socket.email = user.email;
 
         console.log(`${user.name} (${userId}) joined room ${roomId}`);
-        console.log(`Room ${roomId} now has ${room.users.size} users:`, Array.from(room.users.entries()));
+        console.log(
+          `Room ${roomId} now has ${room.users.size} users:`,
+          Array.from(room.users.entries())
+        );
 
         // Send current room state to the new user
         const usersArray = Array.from(room.users.values()).map((user) => ({
@@ -195,9 +198,9 @@ function setupSocketHandlers(io) {
           username: user.username,
           name: user.name,
         }));
-        
+
         console.log(`Sending users array to client:`, usersArray);
-        
+
         socket.emit("room-joined", {
           roomId,
           code: room.code,
@@ -320,7 +323,7 @@ function setupSocketHandlers(io) {
           userId: user.userId,
           username: user.username,
           message: message.trim(),
-          timestamp: new Date().toLocaleTimeString('en-US', { hour12: false })
+          timestamp: new Date().toLocaleTimeString("en-US", { hour12: false }),
         };
 
         // Add message to room's message history (keep last 100 messages)
@@ -331,8 +334,10 @@ function setupSocketHandlers(io) {
 
         // Broadcast to all users in the room
         io.to(roomId).emit("chat-message", chatMessage);
-        
-        console.log(`Chat message from ${user.username} in room ${roomId}: ${message}`);
+
+        console.log(
+          `Chat message from ${user.username} in room ${roomId}: ${message}`
+        );
       }
     });
 

@@ -13,6 +13,8 @@
     "@monaco-editor/react": "^4.6.0",
     "@tailwindcss/vite": "^4.1.14",
     "axios": "^1.6.0",
+    "file-saver": "^2.0.5",
+    "jszip": "^3.10.1",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-router-dom": "^6.30.1",

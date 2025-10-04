@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebSocket Test Client - Simple Version</title>
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        background: #f5f5f5;
+      }
+      .container {
+        max-width: 1000px;
+        margin: 0 auto;
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      .section {
+        margin: 20px 0;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        background: #fafafa;
+      }
+      input,
+      button,
+      textarea,
+      select {
+        margin: 5px;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+      }
+      button {
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 3px;
+        cursor: pointer;
+        padding: 10px 15px;
+      }
+      button:hover {
+        background: #0056b3;
+      }
+      button:disabled {
+        background: #6c757d;
+        cursor: not-allowed;
+      }
+      .messages {
+        height: 200px;
+        overflow-y: auto;
+        border: 1px solid #ccc;
+        padding: 10px;
+        background: #f9f9f9;
+        border-radius: 3px;
+      }
+      .message {
+        margin: 5px 0;
+        padding: 8px;
+        background: white;
+        border-radius: 3px;
+        border-left: 3px solid #007bff;
+      }
+      .code-editor {
+        width: 100%;
+        height: 150px;
+        font-family: "Courier New", monospace;
+        font-size: 14px;
+      }
+      .status {
+        padding: 10px;
+        background: #e9ecef;
+        border-radius: 3px;
+        margin: 10px 0;
+        font-weight: bold;
+      }
+      .room-section {
+        background: #f3e5f5;
+        border-color: #9c27b0;
+      }
+      .code-section {
+        background: #e8f5e8;
+        border-color: #4caf50;
+      }
+      .chat-section {
+        background: #fff3e0;
+        border-color: #ff9800;
+      }
+      .error {
+        color: #d32f2f;
+        background: #ffebee;
+        padding: 10px;
+        border-radius: 3px;
+        margin: 10px 0;
+      }
+      .user-list {
+        background: #f0f0f0;
+        padding: 10px;
+        border-radius: 3px;
+        margin: 10px 0;
+      }
+      .user-item {
+        display: inline-block;
+        background: #007bff;
+        color: white;
+        padding: 3px 8px;
+        margin: 2px;
+        border-radius: 12px;
+        font-size: 12px;
+      }
+      .note {
+        background: #e3f2fd;
+        border: 1px solid #2196f3;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 20px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🚀 Overlook WebSocket Test Client</h1>
+
+      <div class="note">
+        <strong>📝 Note:</strong> This is a simplified test client that works
+        without authentication routes. Your teammate will add the authentication
+        system later. For now, you can test the WebSocket functionality by
+        providing a mock user ID.
+      </div>
+
+      <div class="section room-section">
+        <h3>🏠 Room Management</h3>
+        <div class="status" id="status">Disconnected</div>
+        <div id="roomError" class="error" style="display: none"></div>
+
+        <div style="display: flex; gap: 10px; flex-wrap: wrap">
+          <input
+            type="text"
+            id="username"
+            placeholder="Username"
+            value="TestUser"
+          />
+          <input
+            type="text"
+            id="userId"
+            placeholder="User ID (mock)"
+            value="mock-user-123"
+          />
+          <input
+            type="text"
+            id="roomId"
+            placeholder="Room ID"
+            value="test-room"
+          />
+          <button onclick="connect()" id="connectBtn">Connect to Room</button>
+          <button onclick="disconnect()" id="disconnectBtn" disabled>
+            Disconnect
+          </button>
+        </div>
+
+        <div id="roomInfo" class="user-list">Not connected to any room</div>
+        <div id="userList" class="user-list" style="display: none">
+          <strong>Users in room:</strong>
+          <div id="users"></div>
+        </div>
+      </div>
+
+      <div class="section code-section">
+        <h3>💻 Code Editor</h3>
+        <textarea
+          id="codeEditor"
+          class="code-editor"
+          placeholder="Type your code here..."
+        >
+console.log('Hello World!');</textarea
+        >
+        <br />
+        <select id="language">
+          <option value="javascript">JavaScript</option>
+          <option value="python">Python</option>
+          <option value="java">Java</option>
+          <option value="cpp">C++</option>
+        </select>
+        <button onclick="sendCode()" id="sendCodeBtn" disabled>
+          Send Code
+        </button>
+      </div>
+
+      <div class="section chat-section">
+        <h3>💬 Chat</h3>
+        <div id="messages" class="messages"></div>
+        <div style="display: flex; gap: 10px">
+          <input
+            type="text"
+            id="messageInput"
+            placeholder="Type a message..."
+            style="flex: 1"
+          />
+          <button onclick="sendMessage()" id="sendMessageBtn" disabled>
+            Send
+          </button>
+          <button onclick="simulateAI()" id="simulateAIBtn" disabled>
+            Simulate AI
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let socket = null;
+      let currentRoom = null;
+      let currentUser = null;
+
+      // WebSocket functions
+      function connect() {
+        const username = document.getElementById("username").value;
+        const userId = document.getElementById("userId").value;
+        const roomId = document.getElementById("roomId").value;
+
+        if (!username || !userId || !roomId) {
+          showRoomError("Please fill in all fields");
+          return;
+        }
+
+        // Store current user info
+        currentUser = {
+          id: userId,
+          name: username,
+          email: `${username.toLowerCase()}@example.com`,
+        };
+
+        // Connect to Socket.IO server (without authentication for now)
+        socket = io("http://localhost:3001");
+        currentRoom = roomId;
+
+        // Connection events
+        socket.on("connect", () => {
+          updateStatus("Connected");
+          addMessage("System", "Connected to server", "system");
+
+          // Join room with mock user data
+          socket.emit("join-room", {
+            roomId,
+            userId: currentUser.id,
+            token: "mock-token", // Mock token for testing
+          });
+        });
+
+        socket.on("disconnect", () => {
+          updateStatus("Disconnected");
+          addMessage("System", "Disconnected from server", "system");
+        });
+
+        socket.on("error", (data) => {
+          showRoomError(data.message);
+          addMessage("System", "Error: " + data.message, "error");
+        });
+
+        // Room events
+        socket.on("room-joined", (data) => {
+          updateStatus(`Connected to room: ${data.roomId}`);
+          updateRoomInfo(
+            `Room: ${data.roomId} | Users: ${data.userCount} | Language: ${data.language}`
+          );
+
+          // Load existing code and messages
+          document.getElementById("codeEditor").value = data.code;
+          document.getElementById("language").value = data.language;
+
+          // Load existing messages
+          data.messages.forEach((msg) => {
+            addMessage(msg.username, msg.message, msg.type);
+          });
+
+          // Update user list
+          updateUserList(data.users);
+
+          addMessage("System", `Joined room ${data.roomId}`, "system");
+          enableControls();
+        });
+
+        socket.on("room-full", (data) => {
+          showRoomError(data.message);
+          addMessage("System", data.message, "error");
+        });
+
+        socket.on("user-joined", (data) => {
+          addMessage(
+            "System",
+            `${data.username} joined the room (${data.userCount} users)`,
+            "system"
+          );
+          updateRoomInfo(`Room: ${currentRoom} | Users: ${data.userCount}`);
+        });
+
+        socket.on("user-left", (data) => {
+          addMessage(
+            "System",
+            `${data.username} left the room (${data.userCount} users)`,
+            "system"
+          );
+          updateRoomInfo(`Room: ${currentRoom} | Users: ${data.userCount}`);
+        });
+
+        // Code events
+        socket.on("code-updated", (data) => {
+          document.getElementById("codeEditor").value = data.code;
+          document.getElementById("language").value = data.language;
+          addMessage("System", `Code updated by ${data.updatedBy}`, "system");
+        });
+
+        // Chat events
+        socket.on("new-message", (data) => {
+          addMessage(data.username, data.message, data.type);
+        });
+      }
+
+      function disconnect() {
+        if (socket) {
+          socket.disconnect();
+          socket = null;
+          currentRoom = null;
+          currentUser = null;
+          updateStatus("Disconnected");
+          updateRoomInfo("Not connected to any room");
+          disableControls();
+          document.getElementById("userList").style.display = "none";
+        }
+      }
+
+      function sendCode() {
+        if (!socket) {
+          showRoomError("Not connected");
+          return;
+        }
+
+        const code = document.getElementById("codeEditor").value;
+        const language = document.getElementById("language").value;
+
+        socket.emit("code-change", { code, language });
+        addMessage("You", "Code updated", "user");
+      }
+
+      function sendMessage() {
+        if (!socket) {
+          showRoomError("Not connected");
+          return;
+        }
+
+        const message = document.getElementById("messageInput").value;
+        if (!message.trim()) return;
+
+        socket.emit("chat-message", { message, type: "user" });
+        document.getElementById("messageInput").value = "";
+      }
+
+      function simulateAI() {
+        if (!socket) {
+          showRoomError("Not connected");
+          return;
+        }
+
+        const code = `// AI Generated Code
+function fibonacci(n) {
+    if (n <= 1) return n;
+    return fibonacci(n - 1) + fibonacci(n - 2);
+}
+
+console.log(fibonacci(10));`;
+
+        socket.emit("ai-code-response", {
+          code: code,
+          language: "javascript",
+          explanation: "Here's a Fibonacci function generated by AI!",
+        });
+      }
+
+      function enableControls() {
+        document.getElementById("sendCodeBtn").disabled = false;
+        document.getElementById("sendMessageBtn").disabled = false;
+        document.getElementById("simulateAIBtn").disabled = false;
+        document.getElementById("disconnectBtn").disabled = false;
+      }
+
+      function disableControls() {
+        document.getElementById("sendCodeBtn").disabled = true;
+        document.getElementById("sendMessageBtn").disabled = true;
+        document.getElementById("simulateAIBtn").disabled = true;
+        document.getElementById("disconnectBtn").disabled = true;
+      }
+
+      function updateStatus(status) {
+        document.getElementById("status").textContent = status;
+      }
+
+      function updateRoomInfo(info) {
+        document.getElementById("roomInfo").textContent = info;
+      }
+
+      function updateUserList(users) {
+        const userListDiv = document.getElementById("users");
+        userListDiv.innerHTML = "";
+
+        users.forEach((user) => {
+          const userDiv = document.createElement("span");
+          userDiv.className = "user-item";
+          userDiv.textContent = user.username;
+          userListDiv.appendChild(userDiv);
+        });
+
+        document.getElementById("userList").style.display = "block";
+      }
+
+      function showRoomError(message) {
+        const errorDiv = document.getElementById("roomError");
+        errorDiv.textContent = message;
+        errorDiv.style.display = "block";
+        setTimeout(() => (errorDiv.style.display = "none"), 5000);
+      }
+
+      function addMessage(username, message, type) {
+        const messagesDiv = document.getElementById("messages");
+        const messageDiv = document.createElement("div");
+        messageDiv.className = "message";
+
+        const timestamp = new Date().toLocaleTimeString();
+        messageDiv.innerHTML = `<strong>${username}:</strong> ${message} <small>(${timestamp})</small>`;
+
+        if (type === "ai") {
+          messageDiv.style.borderLeftColor = "#4caf50";
+          messageDiv.style.background = "#e8f5e8";
+        } else if (type === "system") {
+          messageDiv.style.borderLeftColor = "#9c27b0";
+          messageDiv.style.background = "#f3e5f5";
+        } else if (type === "error") {
+          messageDiv.style.borderLeftColor = "#f44336";
+          messageDiv.style.background = "#ffebee";
+        }
+
+        messagesDiv.appendChild(messageDiv);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      }
+
+      // Allow Enter key to send messages
+      document
+        .getElementById("messageInput")
+        .addEventListener("keypress", (e) => {
+          if (e.key === "Enter") {
+            sendMessage();
+          }
+        });
+    </script>
+  </body>
+</html>

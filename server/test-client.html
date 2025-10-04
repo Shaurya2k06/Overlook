@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebSocket Test Client - With Authentication</title>
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        background: #f5f5f5;
+      }
+      .container {
+        max-width: 1000px;
+        margin: 0 auto;
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      .section {
+        margin: 20px 0;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        background: #fafafa;
+      }
+      input,
+      button,
+      textarea,
+      select {
+        margin: 5px;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 3px;
+      }
+      button {
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 3px;
+        cursor: pointer;
+        padding: 10px 15px;
+      }
+      button:hover {
+        background: #0056b3;
+      }
+      button:disabled {
+        background: #6c757d;
+        cursor: not-allowed;
+      }
+      .messages {
+        height: 200px;
+        overflow-y: auto;
+        border: 1px solid #ccc;
+        padding: 10px;
+        background: #f9f9f9;
+        border-radius: 3px;
+      }
+      .message {
+        margin: 5px 0;
+        padding: 8px;
+        background: white;
+        border-radius: 3px;
+        border-left: 3px solid #007bff;
+      }
+      .code-editor {
+        width: 100%;
+        height: 150px;
+        font-family: "Courier New", monospace;
+        font-size: 14px;
+      }
+      .status {
+        padding: 10px;
+        background: #e9ecef;
+        border-radius: 3px;
+        margin: 10px 0;
+        font-weight: bold;
+      }
+      .auth-section {
+        background: #e3f2fd;
+        border-color: #2196f3;
+      }
+      .room-section {
+        background: #f3e5f5;
+        border-color: #9c27b0;
+      }
+      .code-section {
+        background: #e8f5e8;
+        border-color: #4caf50;
+      }
+      .chat-section {
+        background: #fff3e0;
+        border-color: #ff9800;
+      }
+      .error {
+        color: #d32f2f;
+        background: #ffebee;
+        padding: 10px;
+        border-radius: 3px;
+        margin: 10px 0;
+      }
+      .success {
+        color: #2e7d32;
+        background: #e8f5e8;
+        padding: 10px;
+        border-radius: 3px;
+        margin: 10px 0;
+      }
+      .user-list {
+        background: #f0f0f0;
+        padding: 10px;
+        border-radius: 3px;
+        margin: 10px 0;
+      }
+      .user-item {
+        display: inline-block;
+        background: #007bff;
+        color: white;
+        padding: 3px 8px;
+        margin: 2px;
+        border-radius: 12px;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🚀 Overlook WebSocket Test Client</h1>
+      <p>
+        <strong>New Features:</strong> User authentication, User IDs instead of
+        Socket IDs, Better room management
+      </p>
+
+      <div class="section auth-section">
+        <h3>🔐 Authentication</h3>
+        <div id="authStatus" class="status">Not authenticated</div>
+        <div id="authError" class="error" style="display: none"></div>
+        <div id="authSuccess" class="success" style="display: none"></div>
+
+        <div style="display: flex; gap: 10px; flex-wrap: wrap">
+          <input
+            type="text"
+            id="authName"
+            placeholder="Name"
+            value="Test User"
+          />
+          <input
+            type="email"
+            id="authEmail"
+            placeholder="Email"
+            value="test@example.com"
+          />
+          <input
+            type="password"
+            id="authPassword"
+            placeholder="Password"
+            value="password123"
+          />
+          <button onclick="register()">Register</button>
+          <button onclick="login()">Login</button>
+          <button onclick="logout()">Logout</button>
+        </div>
+      </div>
+
+      <div class="section room-section">
+        <h3>🏠 Room Management</h3>
+        <div class="status" id="status">Disconnected</div>
+        <div id="roomError" class="error" style="display: none"></div>
+
+        <div style="display: flex; gap: 10px; flex-wrap: wrap">
+          <input
+            type="text"
+            id="roomId"
+            placeholder="Room ID"
+            value="test-room"
+          />
+          <button onclick="connect()" id="connectBtn" disabled>
+            Connect to Room
+          </button>
+          <button onclick="disconnect()" id="disconnectBtn" disabled>
+            Disconnect
+          </button>
+        </div>
+
+        <div id="roomInfo" class="user-list">Not connected to any room</div>
+        <div id="userList" class="user-list" style="display: none">
+          <strong>Users in room:</strong>
+          <div id="users"></div>
+        </div>
+      </div>
+
+      <div class="section code-section">
+        <h3>💻 Code Editor</h3>
+        <textarea
+          id="codeEditor"
+          class="code-editor"
+          placeholder="Type your code here..."
+        >
+console.log('Hello World!');</textarea
+        >
+        <br />
+        <select id="language">
+          <option value="javascript">JavaScript</option>
+          <option value="python">Python</option>
+          <option value="java">Java</option>
+          <option value="cpp">C++</option>
+        </select>
+        <button onclick="sendCode()" id="sendCodeBtn" disabled>
+          Send Code
+        </button>
+      </div>
+
+      <div class="section chat-section">
+        <h3>💬 Chat</h3>
+        <div id="messages" class="messages"></div>
+        <div style="display: flex; gap: 10px">
+          <input
+            type="text"
+            id="messageInput"
+            placeholder="Type a message..."
+            style="flex: 1"
+          />
+          <button onclick="sendMessage()" id="sendMessageBtn" disabled>
+            Send
+          </button>
+          <button onclick="simulateAI()" id="simulateAIBtn" disabled>
+            Simulate AI
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let socket = null;
+      let currentRoom = null;
+      let authToken = null;
+      let currentUser = null;
+
+      // Authentication functions
+      async function register() {
+        const name = document.getElementById("authName").value;
+        const email = document.getElementById("authEmail").value;
+        const password = document.getElementById("authPassword").value;
+
+        try {
+          const response = await fetch(
+            "http://localhost:3001/api/users/register",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ name, email, password }),
+            }
+          );
+
+          const data = await response.json();
+
+          if (response.ok) {
+            authToken = data.token;
+            currentUser = data.user;
+            updateAuthStatus("Authenticated as: " + data.user.name);
+            showSuccess("Registration successful!");
+            enableRoomControls();
+          } else {
+            showAuthError(data.message);
+          }
+        } catch (error) {
+          showAuthError("Registration failed: " + error.message);
+        }
+      }
+
+      async function login() {
+        const email = document.getElementById("authEmail").value;
+        const password = document.getElementById("authPassword").value;
+
+        try {
+          const response = await fetch(
+            "http://localhost:3001/api/users/login",
+            {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ email, password }),
+            }
+          );
+
+          const data = await response.json();
+
+          if (response.ok) {
+            authToken = data.token;
+            currentUser = data.user;
+            updateAuthStatus("Authenticated as: " + data.user.name);
+            showSuccess("Login successful!");
+            enableRoomControls();
+          } else {
+            showAuthError(data.message);
+          }
+        } catch (error) {
+          showAuthError("Login failed: " + error.message);
+        }
+      }
+
+      function logout() {
+        authToken = null;
+        currentUser = null;
+        updateAuthStatus("Not authenticated");
+        disableRoomControls();
+        if (socket) {
+          disconnect();
+        }
+      }
+
+      function enableRoomControls() {
+        document.getElementById("connectBtn").disabled = false;
+        document.getElementById("sendCodeBtn").disabled = false;
+        document.getElementById("sendMessageBtn").disabled = false;
+        document.getElementById("simulateAIBtn").disabled = false;
+      }
+
+      function disableRoomControls() {
+        document.getElementById("connectBtn").disabled = true;
+        document.getElementById("disconnectBtn").disabled = true;
+        document.getElementById("sendCodeBtn").disabled = true;
+        document.getElementById("sendMessageBtn").disabled = true;
+        document.getElementById("simulateAIBtn").disabled = true;
+      }
+
+      function updateAuthStatus(status) {
+        document.getElementById("authStatus").textContent = status;
+      }
+
+      function showAuthError(message) {
+        const errorDiv = document.getElementById("authError");
+        errorDiv.textContent = message;
+        errorDiv.style.display = "block";
+        setTimeout(() => (errorDiv.style.display = "none"), 5000);
+      }
+
+      function showSuccess(message) {
+        const successDiv = document.getElementById("authSuccess");
+        successDiv.textContent = message;
+        successDiv.style.display = "block";
+        setTimeout(() => (successDiv.style.display = "none"), 3000);
+      }
+
+      // WebSocket functions
+      function connect() {
+        if (!authToken || !currentUser) {
+          showRoomError("Please authenticate first");
+          return;
+        }
+
+        const roomId = document.getElementById("roomId").value;
+        if (!roomId) {
+          showRoomError("Please enter a room ID");
+          return;
+        }
+
+        // Connect to Socket.IO server with authentication
+        socket = io("http://localhost:3001", {
+          auth: {
+            token: authToken,
+          },
+        });
+        currentRoom = roomId;
+
+        // Connection events
+        socket.on("connect", () => {
+          updateStatus("Connected");
+          addMessage("System", "Connected to server", "system");
+
+          // Join room with user ID
+          socket.emit("join-room", {
+            roomId,
+            userId: currentUser.id,
+            token: authToken,
+          });
+        });
+
+        socket.on("disconnect", () => {
+          updateStatus("Disconnected");
+          addMessage("System", "Disconnected from server", "system");
+        });
+
+        socket.on("error", (data) => {
+          showRoomError(data.message);
+          addMessage("System", "Error: " + data.message, "error");
+        });
+
+        // Room events
+        socket.on("room-joined", (data) => {
+          updateStatus(`Connected to room: ${data.roomId}`);
+          updateRoomInfo(
+            `Room: ${data.roomId} | Users: ${data.userCount} | Language: ${data.language}`
+          );
+
+          // Load existing code and messages
+          document.getElementById("codeEditor").value = data.code;
+          document.getElementById("language").value = data.language;
+
+          // Load existing messages
+          data.messages.forEach((msg) => {
+            addMessage(msg.username, msg.message, msg.type);
+          });
+
+          // Update user list
+          updateUserList(data.users);
+
+          addMessage("System", `Joined room ${data.roomId}`, "system");
+          document.getElementById("disconnectBtn").disabled = false;
+        });
+
+        socket.on("room-full", (data) => {
+          showRoomError(data.message);
+          addMessage("System", data.message, "error");
+        });
+
+        socket.on("user-joined", (data) => {
+          addMessage(
+            "System",
+            `${data.username} joined the room (${data.userCount} users)`,
+            "system"
+          );
+          updateRoomInfo(`Room: ${currentRoom} | Users: ${data.userCount}`);
+        });
+
+        socket.on("user-left", (data) => {
+          addMessage(
+            "System",
+            `${data.username} left the room (${data.userCount} users)`,
+            "system"
+          );
+          updateRoomInfo(`Room: ${currentRoom} | Users: ${data.userCount}`);
+        });
+
+        // Code events
+        socket.on("code-updated", (data) => {
+          document.getElementById("codeEditor").value = data.code;
+          document.getElementById("language").value = data.language;
+          addMessage("System", `Code updated by ${data.updatedBy}`, "system");
+        });
+
+        // Chat events
+        socket.on("new-message", (data) => {
+          addMessage(data.username, data.message, data.type);
+        });
+      }
+
+      function disconnect() {
+        if (socket) {
+          socket.disconnect();
+          socket = null;
+          currentRoom = null;
+          updateStatus("Disconnected");
+          updateRoomInfo("Not connected to any room");
+          document.getElementById("disconnectBtn").disabled = true;
+          document.getElementById("userList").style.display = "none";
+        }
+      }
+
+      function sendCode() {
+        if (!socket) {
+          showRoomError("Not connected");
+          return;
+        }
+
+        const code = document.getElementById("codeEditor").value;
+        const language = document.getElementById("language").value;
+
+        socket.emit("code-change", { code, language });
+        addMessage("You", "Code updated", "user");
+      }
+
+      function sendMessage() {
+        if (!socket) {
+          showRoomError("Not connected");
+          return;
+        }
+
+        const message = document.getElementById("messageInput").value;
+        if (!message.trim()) return;
+
+        socket.emit("chat-message", { message, type: "user" });
+        document.getElementById("messageInput").value = "";
+      }
+
+      function simulateAI() {
+        if (!socket) {
+          showRoomError("Not connected");
+          return;
+        }
+
+        const code = `// AI Generated Code
+function fibonacci(n) {
+    if (n <= 1) return n;
+    return fibonacci(n - 1) + fibonacci(n - 2);
+}
+
+console.log(fibonacci(10));`;
+
+        socket.emit("ai-code-response", {
+          code: code,
+          language: "javascript",
+          explanation: "Here's a Fibonacci function generated by AI!",
+        });
+      }
+
+      function updateStatus(status) {
+        document.getElementById("status").textContent = status;
+      }
+
+      function updateRoomInfo(info) {
+        document.getElementById("roomInfo").textContent = info;
+      }
+
+      function updateUserList(users) {
+        const userListDiv = document.getElementById("users");
+        userListDiv.innerHTML = "";
+
+        users.forEach((user) => {
+          const userDiv = document.createElement("span");
+          userDiv.className = "user-item";
+          userDiv.textContent = user.username;
+          userListDiv.appendChild(userDiv);
+        });
+
+        document.getElementById("userList").style.display = "block";
+      }
+
+      function showRoomError(message) {
+        const errorDiv = document.getElementById("roomError");
+        errorDiv.textContent = message;
+        errorDiv.style.display = "block";
+        setTimeout(() => (errorDiv.style.display = "none"), 5000);
+      }
+
+      function addMessage(username, message, type) {
+        const messagesDiv = document.getElementById("messages");
+        const messageDiv = document.createElement("div");
+        messageDiv.className = "message";
+
+        const timestamp = new Date().toLocaleTimeString();
+        messageDiv.innerHTML = `<strong>${username}:</strong> ${message} <small>(${timestamp})</small>`;
+
+        if (type === "ai") {
+          messageDiv.style.borderLeftColor = "#4caf50";
+          messageDiv.style.background = "#e8f5e8";
+        } else if (type === "system") {
+          messageDiv.style.borderLeftColor = "#9c27b0";
+          messageDiv.style.background = "#f3e5f5";
+        } else if (type === "error") {
+          messageDiv.style.borderLeftColor = "#f44336";
+          messageDiv.style.background = "#ffebee";
+        }
+
+        messagesDiv.appendChild(messageDiv);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      }
+
+      // Allow Enter key to send messages
+      document
+        .getElementById("messageInput")
+        .addEventListener("keypress", (e) => {
+          if (e.key === "Enter") {
+            sendMessage();
+          }
+        });
+    </script>
+  </body>
+</html>

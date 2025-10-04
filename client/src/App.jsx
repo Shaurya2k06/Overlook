@@ -4,8 +4,8 @@ import "react-toastify/dist/ReactToastify.css";
 import { FileSystemProvider } from "./contexts/FileSystemContext";
 import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
-import About from "./pages/About";
 import Editor from "./pages/Editor";
+import SecurityTesting from "./pages/SecurityTesting";
 
 function App() {
   return (
@@ -14,8 +14,8 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/about" element={<About />} />
           <Route path="/room/:roomId" element={<Editor />} />
+          <Route path="/security-testing" element={<SecurityTesting />} />
         </Routes>
         <ToastContainer
           position="bottom-right"

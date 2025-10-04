@@ -14,7 +14,7 @@ async function createRoom(req, res) {
 
         const newRoom = await Rooms.create({
             rid,
-            userId: req.userId,
+            owner: req.userId,
         });
         return res.status(201).json({message: "Room created successfully", roomId: newRoom.rid});
     } catch (err) {
@@ -24,7 +24,26 @@ async function createRoom(req, res) {
     }
 }
 
-async function addFilesToRoom(rid, files) {
+async function addFilesToRoom(req, res) {
+    try {
+        const {rid, files} = req.body;
+        if (!rid || !files || !Array.isArray(files)) {
+            return res.status(400).json({message: "Room ID and files array are required"});
+        }
+        const room = await addFilesToRoomHelper(rid, files);
+        if (room.rid) {
+            return res.status(200).json({message: "Files added successfully", room});
+        } else {
+            return room;
+        }
+    } catch (err) {
+        console.log("error in add files to room");
+        console.log(err);
+        return res.status(500).json({message: "Server error"});
+    }
+}
+
+async function addFilesToRoomHelper(rid, files) {
     try {
         const room = await Rooms.findOne({rid});
         if (!room) {

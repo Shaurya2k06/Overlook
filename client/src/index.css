@@ -1,5 +1,14 @@
 @import "tailwindcss";
 
+/* Custom Advercase Font */
+@font-face {
+  font-family: 'Advercase';
+  src: url('/Advercase Font.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
@@ -15,6 +24,11 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+html {
+  scroll-snap-type: y mandatory;
+  scroll-behavior: smooth;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -24,6 +38,10 @@ body {
   min-width: 320px;
   min-height: 100vh;
   background-color: #030303;
+}
+
+.mix-blend-header {
+  mix-blend-mode: screen;
 }
 
 /* Custom Animations */

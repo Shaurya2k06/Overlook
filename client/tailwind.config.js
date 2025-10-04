@@ -6,6 +6,9 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        'advercase': ['Advercase', 'system-ui', 'sans-serif'],
+      },
       animation: {
         'grid': 'grid 20s linear infinite',
         'pulse-slow': 'pulse-slow 8s ease-in-out infinite',

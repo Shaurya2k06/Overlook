@@ -115,10 +115,27 @@ function Dashboard() {
     });
   };
 
-  // Generate user ID for session
-  const [user] = useState({
-    id: `user_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
-    username: "guest", // Default username since profile is managed via login
+  // Get user data from localStorage
+  const [user, setUser] = useState(() => {
+    const savedUser = localStorage.getItem("overlook_user");
+    if (savedUser) {
+      try {
+        const parsedUser = JSON.parse(savedUser);
+        return {
+          id:
+            parsedUser.id ||
+            `user_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+          username: parsedUser.username || "guest",
+        };
+      } catch (error) {
+        console.error("Error parsing saved user data:", error);
+      }
+    }
+    // Fallback to default user
+    return {
+      id: `user_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
+      username: "guest",
+    };
   });
 
   // Get real system information
@@ -384,7 +401,7 @@ function Dashboard() {
               {/* Header */}
               <div className="mb-8">
                 <h1 className="text-2xl text-green-400 mb-2">
-                  &#62; SECURE_COLLABORATION_DASHBOARD
+                  &#62; Hello, {user.username}
                 </h1>
                 <p className="text-green-400/60 text-sm">
                   Initialize secure coding environments with real-time

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>WebSocket Test Client - With Authentication</title>
+    <title>WebSocket Test Client - Simple Version</title>
     <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
     <style>
       body {
@@ -78,10 +78,6 @@
         margin: 10px 0;
         font-weight: bold;
       }
-      .auth-section {
-        background: #e3f2fd;
-        border-color: #2196f3;
-      }
       .room-section {
         background: #f3e5f5;
         border-color: #9c27b0;
@@ -101,13 +97,6 @@
         border-radius: 3px;
         margin: 10px 0;
       }
-      .success {
-        color: #2e7d32;
-        background: #e8f5e8;
-        padding: 10px;
-        border-radius: 3px;
-        margin: 10px 0;
-      }
       .user-list {
         background: #f0f0f0;
         padding: 10px;
@@ -123,45 +112,24 @@
         border-radius: 12px;
         font-size: 12px;
       }
+      .note {
+        background: #e3f2fd;
+        border: 1px solid #2196f3;
+        padding: 15px;
+        border-radius: 5px;
+        margin: 20px 0;
+      }
     </style>
   </head>
   <body>
     <div class="container">
       <h1>🚀 Overlook WebSocket Test Client</h1>
-      <p>
-        <strong>New Features:</strong> User authentication, User IDs instead of
-        Socket IDs, Better room management
-      </p>
 
-      <div class="section auth-section">
-        <h3>🔐 Authentication</h3>
-        <div id="authStatus" class="status">Not authenticated</div>
-        <div id="authError" class="error" style="display: none"></div>
-        <div id="authSuccess" class="success" style="display: none"></div>
-
-        <div style="display: flex; gap: 10px; flex-wrap: wrap">
-          <input
-            type="text"
-            id="authName"
-            placeholder="Name"
-            value="Test User"
-          />
-          <input
-            type="email"
-            id="authEmail"
-            placeholder="Email"
-            value="test@example.com"
-          />
-          <input
-            type="password"
-            id="authPassword"
-            placeholder="Password"
-            value="password123"
-          />
-          <button onclick="register()">Register</button>
-          <button onclick="login()">Login</button>
-          <button onclick="logout()">Logout</button>
-        </div>
+      <div class="note">
+        <strong>📝 Note:</strong> This is a simplified test client that works
+        without authentication routes. Your teammate will add the authentication
+        system later. For now, you can test the WebSocket functionality by
+        providing a mock user ID.
       </div>
 
       <div class="section room-section">
@@ -172,13 +140,23 @@
         <div style="display: flex; gap: 10px; flex-wrap: wrap">
           <input
             type="text"
+            id="username"
+            placeholder="Username"
+            value="TestUser"
+          />
+          <input
+            type="text"
+            id="userId"
+            placeholder="User ID (mock)"
+            value="mock-user-123"
+          />
+          <input
+            type="text"
             id="roomId"
             placeholder="Room ID"
             value="test-room"
           />
-          <button onclick="connect()" id="connectBtn" disabled>
-            Connect to Room
-          </button>
+          <button onclick="connect()" id="connectBtn">Connect to Room</button>
           <button onclick="disconnect()" id="disconnectBtn" disabled>
             Disconnect
           </button>
@@ -235,137 +213,28 @@ console.log('Hello World!');</textarea
     <script>
       let socket = null;
       let currentRoom = null;
-      let authToken = null;
       let currentUser = null;
-
-      // Authentication functions
-      async function register() {
-        const name = document.getElementById("authName").value;
-        const email = document.getElementById("authEmail").value;
-        const password = document.getElementById("authPassword").value;
-
-        try {
-          const response = await fetch(
-            "http://localhost:3001/api/users/register",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ name, email, password }),
-            }
-          );
-
-          const data = await response.json();
-
-          if (response.ok) {
-            authToken = data.token;
-            currentUser = data.user;
-            updateAuthStatus("Authenticated as: " + data.user.name);
-            showSuccess("Registration successful!");
-            enableRoomControls();
-          } else {
-            showAuthError(data.message);
-          }
-        } catch (error) {
-          showAuthError("Registration failed: " + error.message);
-        }
-      }
-
-      async function login() {
-        const email = document.getElementById("authEmail").value;
-        const password = document.getElementById("authPassword").value;
-
-        try {
-          const response = await fetch(
-            "http://localhost:3001/api/users/login",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({ email, password }),
-            }
-          );
-
-          const data = await response.json();
-
-          if (response.ok) {
-            authToken = data.token;
-            currentUser = data.user;
-            updateAuthStatus("Authenticated as: " + data.user.name);
-            showSuccess("Login successful!");
-            enableRoomControls();
-          } else {
-            showAuthError(data.message);
-          }
-        } catch (error) {
-          showAuthError("Login failed: " + error.message);
-        }
-      }
-
-      function logout() {
-        authToken = null;
-        currentUser = null;
-        updateAuthStatus("Not authenticated");
-        disableRoomControls();
-        if (socket) {
-          disconnect();
-        }
-      }
-
-      function enableRoomControls() {
-        document.getElementById("connectBtn").disabled = false;
-        document.getElementById("sendCodeBtn").disabled = false;
-        document.getElementById("sendMessageBtn").disabled = false;
-        document.getElementById("simulateAIBtn").disabled = false;
-      }
-
-      function disableRoomControls() {
-        document.getElementById("connectBtn").disabled = true;
-        document.getElementById("disconnectBtn").disabled = true;
-        document.getElementById("sendCodeBtn").disabled = true;
-        document.getElementById("sendMessageBtn").disabled = true;
-        document.getElementById("simulateAIBtn").disabled = true;
-      }
-
-      function updateAuthStatus(status) {
-        document.getElementById("authStatus").textContent = status;
-      }
-
-      function showAuthError(message) {
-        const errorDiv = document.getElementById("authError");
-        errorDiv.textContent = message;
-        errorDiv.style.display = "block";
-        setTimeout(() => (errorDiv.style.display = "none"), 5000);
-      }
-
-      function showSuccess(message) {
-        const successDiv = document.getElementById("authSuccess");
-        successDiv.textContent = message;
-        successDiv.style.display = "block";
-        setTimeout(() => (successDiv.style.display = "none"), 3000);
-      }
 
       // WebSocket functions
       function connect() {
-        if (!authToken || !currentUser) {
-          showRoomError("Please authenticate first");
-          return;
-        }
-
+        const username = document.getElementById("username").value;
+        const userId = document.getElementById("userId").value;
         const roomId = document.getElementById("roomId").value;
-        if (!roomId) {
-          showRoomError("Please enter a room ID");
+
+        if (!username || !userId || !roomId) {
+          showRoomError("Please fill in all fields");
           return;
         }
 
-        // Connect to Socket.IO server with authentication
-        socket = io("http://localhost:3001", {
-          auth: {
-            token: authToken,
-          },
-        });
+        // Store current user info
+        currentUser = {
+          id: userId,
+          name: username,
+          email: `${username.toLowerCase()}@example.com`,
+        };
+
+        // Connect to Socket.IO server (without authentication for now)
+        socket = io("http://localhost:3001");
         currentRoom = roomId;
 
         // Connection events
@@ -373,11 +242,11 @@ console.log('Hello World!');</textarea
           updateStatus("Connected");
           addMessage("System", "Connected to server", "system");
 
-          // Join room with user ID
+          // Join room with mock user data
           socket.emit("join-room", {
             roomId,
             userId: currentUser.id,
-            token: authToken,
+            token: "mock-token", // Mock token for testing
           });
         });
 
@@ -411,7 +280,7 @@ console.log('Hello World!');</textarea
           updateUserList(data.users);
 
           addMessage("System", `Joined room ${data.roomId}`, "system");
-          document.getElementById("disconnectBtn").disabled = false;
+          enableControls();
         });
 
         socket.on("room-full", (data) => {
@@ -455,9 +324,10 @@ console.log('Hello World!');</textarea
           socket.disconnect();
           socket = null;
           currentRoom = null;
+          currentUser = null;
           updateStatus("Disconnected");
           updateRoomInfo("Not connected to any room");
-          document.getElementById("disconnectBtn").disabled = true;
+          disableControls();
           document.getElementById("userList").style.display = "none";
         }
       }
@@ -507,6 +377,20 @@ console.log(fibonacci(10));`;
           language: "javascript",
           explanation: "Here's a Fibonacci function generated by AI!",
         });
+      }
+
+      function enableControls() {
+        document.getElementById("sendCodeBtn").disabled = false;
+        document.getElementById("sendMessageBtn").disabled = false;
+        document.getElementById("simulateAIBtn").disabled = false;
+        document.getElementById("disconnectBtn").disabled = false;
+      }
+
+      function disableControls() {
+        document.getElementById("sendCodeBtn").disabled = true;
+        document.getElementById("sendMessageBtn").disabled = true;
+        document.getElementById("simulateAIBtn").disabled = true;
+        document.getElementById("disconnectBtn").disabled = true;
       }
 
       function updateStatus(status) {

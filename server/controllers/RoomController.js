@@ -1,10 +1,8 @@
 const { v4: uuidv4 } = require("uuid");
 
-// In-memory storage for rooms (in production, use Redis or database)
 const rooms = new Map();
 
 class RoomController {
-  // Create a new room with unique ID
   static createRoom(req, res) {
     try {
       const roomId = uuidv4();
@@ -32,7 +30,6 @@ class RoomController {
     }
   }
 
-  // Join an existing room
   static joinRoom(req, res) {
     try {
       const { roomId } = req.params;

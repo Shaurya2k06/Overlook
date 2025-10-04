@@ -1,7 +1,8 @@
+const dotenv = require("dotenv");
 const jwt = require("jsonwebtoken");
 const User = require("../model/User");
+dotenv.config();
 
-// JWT Authentication middleware for WebSocket connections
 const authenticateSocket = async (socket, next) => {
   try {
     const token = socket.handshake.auth.token || socket.handshake.query.token;
@@ -10,7 +11,7 @@ const authenticateSocket = async (socket, next) => {
       return next(new Error("Authentication token required"));
     }
 
-    // Allow mock token for testing (your teammate will remove this)
+    // Allow mock token for testing
     if (token === "mock-token") {
       socket.userId = "mock-user-123";
       socket.username = "TestUser";
@@ -19,19 +20,16 @@ const authenticateSocket = async (socket, next) => {
       return next();
     }
 
-    // Verify JWT token
     const decoded = jwt.verify(
       token,
-      process.env.JWT_SECRET || "your-secret-key"
+      process.env.JWT_SECRET
     );
 
-    // Find user in database
     const user = await User.findById(decoded.userId);
     if (!user) {
       return next(new Error("User not found"));
     }
 
-    // Attach user info to socket
     socket.userId = user._id.toString();
     socket.username = user.name;
     socket.name = user.name;
@@ -44,7 +42,6 @@ const authenticateSocket = async (socket, next) => {
   }
 };
 
-// Regular HTTP authentication middleware
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1]; // Bearer TOKEN
@@ -55,7 +52,7 @@ const authenticateToken = (req, res, next) => {
 
   jwt.verify(
     token,
-    process.env.JWT_SECRET || "your-secret-key",
+    process.env.JWT_SECRET,
     (err, decoded) => {
       if (err) {
         return res.status(403).json({ message: "Invalid or expired token" });

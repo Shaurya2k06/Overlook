@@ -3,7 +3,7 @@ const http = require("http");
 const socketIo = require("socket.io");
 const cors = require("cors");
 require("dotenv").config();
-const URL = process.env.MONGO_URI; // importing our mongo uri from env (atlas)
+const URL = process.env.URL; // importing our mongo uri from env (atlas)
 
 // Import our modules
 const { connectMongoDB } = require("./db/connection");
@@ -25,6 +25,9 @@ const io = socketIo(server, {
 });
 
 // Middleware
+connectMongoDB(URL)
+    .then(() => console.log("MongoDB Connected!!"))
+    .catch((err) => console.log("Error, Can't connect to DB", err));
 app.use(cors());
 app.use(express.json());
 
@@ -56,8 +59,7 @@ app.get("/api/rooms", (req, res) => {
 // Start server
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
-  connectMongoDB(URL);
-  console.log(` Server running on port ${PORT}`);
-  console.log(` WebSocket server ready for connections`);
-  console.log(` Authentication enabled for WebSocket connections`);
+  console.log(`Server running on port ${PORT}`);
+  console.log(`WebSocket server ready for connections`);
+  console.log(`Authentication enabled for WebSocket connections`);
 });

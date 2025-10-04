@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import fetchData from "../../service/backendApi";
 import {
   Terminal,
   User,
@@ -29,44 +29,30 @@ function Dashboard() {
   const [isCreating, setIsCreating] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [systemSpecs, setSystemSpecs] = useState({
-    platform: "",
-    arch: "",
-    cpuCores: 0,
-    totalMemory: 0,
-    nodeVersion: "",
-    userAgent: "",
-  });
-  const [realTimeStats, setRealTimeStats] = useState({
-    usedMemory: 0,
-    freeMemory: 0,
-    uptime: 0,
-    loadAverage: [0, 0, 0],
-  });
   const [dashboardTerminalOutput, setDashboardTerminalOutput] = useState([]);
   const [showGlobalTerminal, setShowGlobalTerminal] = useState(false);
 
   // Terminal notification function
-  const addTerminalNotification = (message, type = 'info') => {
-    const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false });
+  const addTerminalNotification = useCallback((message, type = "info") => {
+    const timestamp = new Date().toLocaleTimeString("en-US", { hour12: false });
     const notification = {
       id: Date.now(),
       message,
       type,
-      timestamp
+      timestamp,
     };
-    setDashboardTerminalOutput(prev => [...prev, notification]);
-    
+    setDashboardTerminalOutput((prev) => [...prev, notification]);
+
     // Auto-show terminal for notifications
     setShowGlobalTerminal(true);
-    
+
     // Auto-hide after 5 seconds for non-error messages
-    if (type !== 'error') {
+    if (type !== "error") {
       setTimeout(() => {
         setShowGlobalTerminal(false);
       }, 5000);
     }
-  };
+  }, []);
 
   // Real recent rooms state
   const [recentRooms, setRecentRooms] = useState([]);
@@ -74,7 +60,7 @@ function Dashboard() {
   // Load recent rooms from localStorage on component mount
   useEffect(() => {
     const loadRecentRooms = () => {
-      const stored = localStorage.getItem('overlook_recent_rooms');
+      const stored = localStorage.getItem("overlook_recent_rooms");
       if (stored) {
         try {
           const rooms = JSON.parse(stored);
@@ -84,7 +70,7 @@ function Dashboard() {
             .slice(0, 5);
           setRecentRooms(sortedRooms);
         } catch (error) {
-          console.error('Error loading recent rooms:', error);
+          console.error("Error loading recent rooms:", error);
           setRecentRooms([]);
         }
       }
@@ -94,29 +80,29 @@ function Dashboard() {
   }, []);
 
   // Function to add a room to recent rooms
-  const addToRecentRooms = (roomData) => {
+  const addToRecentRooms = useCallback((roomData) => {
     const newRoom = {
       id: roomData.id,
       name: roomData.name || `room_${roomData.id}`,
-      status: 'active',
+      status: "active",
       participants: roomData.participants || 1,
-      created: new Date().toLocaleTimeString('en-US', { hour12: false }),
-      lastJoined: new Date().toISOString()
+      created: new Date().toLocaleTimeString("en-US", { hour12: false }),
+      lastJoined: new Date().toISOString(),
     };
 
-    setRecentRooms(prev => {
+    setRecentRooms((prev) => {
       // Remove existing room if present and add new one at the beginning
-      const filtered = prev.filter(room => room.id !== newRoom.id);
+      const filtered = prev.filter((room) => room.id !== newRoom.id);
       const updated = [newRoom, ...filtered].slice(0, 5); // Keep only 5 most recent
-      
+
       // Save to localStorage
-      localStorage.setItem('overlook_recent_rooms', JSON.stringify(updated));
+      localStorage.setItem("overlook_recent_rooms", JSON.stringify(updated));
       return updated;
     });
-  };
+  }, []);
 
   // Get user data from localStorage
-  const [user, setUser] = useState(() => {
+  const [user] = useState(() => {
     const savedUser = localStorage.getItem("overlook_user");
     if (savedUser) {
       try {
@@ -138,55 +124,39 @@ function Dashboard() {
     };
   });
 
-  // Get real system information
-  const getRealSystemInfo = () => {
-    const specs = {
-      platform: navigator.platform || "Unknown",
-      arch: navigator.userAgentData?.platform || "Unknown",
-      cpuCores: navigator.hardwareConcurrency || "Unknown",
-      totalMemory: navigator.deviceMemory
-        ? `${navigator.deviceMemory}GB`
-        : "Unknown",
-      nodeVersion: typeof process !== "undefined" ? process.version : "Browser",
-      userAgent:
-        navigator.userAgent.split(" ").slice(0, 3).join(" ") || "Unknown",
-    };
-    setSystemSpecs(specs);
-  };
-
-  // Get real-time performance data
-  const getRealTimeData = async () => {
+  // Create a new room and navigate to it
+  const createRoom = useCallback(async () => {
+    setIsCreating(true);
     try {
-      // Memory usage (if available)
-      if ("memory" in performance) {
-        const memInfo = performance.memory;
-        setRealTimeStats((prev) => ({
-          ...prev,
-          usedMemory: Math.round(memInfo.usedJSHeapSize / 1024 / 1024), // MB
-          totalMemory: Math.round(memInfo.totalJSHeapSize / 1024 / 1024), // MB
-          memoryLimit: Math.round(memInfo.jsHeapSizeLimit / 1024 / 1024), // MB
-        }));
-      }
+      // Use the hybrid room creation endpoint that stores in DB and initializes websocket
+      console.log("Creating hybrid room via API...");
+      const response = await fetchData.post("/hybrid-rooms/create");
+      console.log("Hybrid room creation response:", response.data);
 
-      // Connection info
-      if ("connection" in navigator) {
-        const connection = navigator.connection;
-        setRealTimeStats((prev) => ({
-          ...prev,
-          connectionType: connection.effectiveType || "Unknown",
-          downlink: connection.downlink || 0,
-        }));
-      }
+      const { data } = response.data;
+      const createdRoomId = data.roomId;
+      console.log("Created room ID:", createdRoomId);
+
+      // Add to recent rooms
+      addToRecentRooms({
+        id: createdRoomId,
+        name: `room_${createdRoomId}`,
+        participants: 1,
+      });
+
+      addTerminalNotification(
+        `Room ${createdRoomId} created successfully`,
+        "success"
+      );
+      console.log("Navigating to room:", `/room/${createdRoomId}`);
+      navigate(`/room/${createdRoomId}`);
     } catch (error) {
-      console.log("Performance API not fully supported");
+      console.error("Failed to create room:", error);
+      addTerminalNotification("Failed to create room", "error");
+    } finally {
+      setIsCreating(false);
     }
-  };
-
-
-
-
-
-
+  }, [navigate, addToRecentRooms, addTerminalNotification]);
 
   // Update time every second
   useEffect(() => {
@@ -196,61 +166,26 @@ function Dashboard() {
     return () => clearInterval(interval);
   }, []);
 
-  // Get real system information on mount
+  // Handle terminal room creation command
   useEffect(() => {
-    getRealSystemInfo();
-    getRealTimeData();
-
-    // Handle terminal output
-    const handleDashboardTerminalOutput = (output) => {
-      setDashboardTerminalOutput(prev => [...prev, output]);
-    };
-
-    // Handle terminal room creation command
     const handleTerminalCreateRoom = () => {
       createRoom();
     };
 
     // Add event listener for terminal commands
-    window.addEventListener('terminal-create-room', handleTerminalCreateRoom);
-
-    // Update real-time data every 5 seconds
-    const interval = setInterval(() => {
-      getRealTimeData();
-    }, 5000);
+    window.addEventListener("terminal-create-room", handleTerminalCreateRoom);
 
     return () => {
-      clearInterval(interval);
-      window.removeEventListener('terminal-create-room', handleTerminalCreateRoom);
+      window.removeEventListener(
+        "terminal-create-room",
+        handleTerminalCreateRoom
+      );
     };
-  }, []);
+  }, [createRoom]);
 
   useEffect(() => {
     setIsVisible(true);
   }, []);
-
-  // Create a new room and navigate to it
-  const createRoom = async () => {
-    setIsCreating(true);
-    try {
-      const response = await axios.post(`${API_BASE_URL}/rooms/create`);
-      const { roomId } = response.data;
-      
-      // Add to recent rooms
-      addToRecentRooms({
-        id: roomId,
-        name: `room_${roomId}`,
-        participants: 1
-      });
-      
-      navigate(`/room/${roomId}`);
-    } catch (error) {
-      console.error("Failed to create room:", error);
-      addTerminalNotification("Failed to create room", 'error');
-    } finally {
-      setIsCreating(false);
-    }
-  };
 
   // Join an existing room and navigate to it
   const joinRoom = async (roomId) => {
@@ -260,13 +195,13 @@ function Dashboard() {
       addToRecentRooms({
         id: roomId,
         name: `room_${roomId}`,
-        participants: 1
+        participants: 1,
       });
-      
+
       navigate(`/room/${roomId}`);
     } catch (error) {
       console.error("Error joining room:", error);
-      addTerminalNotification("Failed to join room", 'error');
+      addTerminalNotification("Failed to join room", "error");
     } finally {
       setIsJoining(false);
     }
@@ -274,7 +209,7 @@ function Dashboard() {
 
   const handleJoinRoom = async () => {
     if (!roomId.trim()) {
-      addTerminalNotification("Please enter a room ID", 'warning');
+      addTerminalNotification("Please enter a room ID", "warning");
       return;
     }
     await joinRoom(roomId.trim());
@@ -360,7 +295,9 @@ function Dashboard() {
                     onClick={() => joinRoom(room.id)}
                   >
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-green-400 truncate">{room.name}</span>
+                      <span className="text-green-400 truncate">
+                        {room.name}
+                      </span>
                       <div
                         className={`flex items-center gap-1 ${getStatusColor(
                           room.status
@@ -384,7 +321,6 @@ function Dashboard() {
               )}
             </div>
           </div>
-
         </div>
 
         {/* Main Content */}
@@ -536,10 +472,8 @@ function Dashboard() {
               </div>
             </div>
           </div>
-
-
         </div>
-        
+
         {/* Terminal Toggle Button */}
         <button
           onClick={() => setShowGlobalTerminal(!showGlobalTerminal)}
@@ -551,8 +485,10 @@ function Dashboard() {
         </button>
 
         {/* Global Terminal */}
-        <GlobalTerminal 
-          onOutput={(output) => setDashboardTerminalOutput(prev => [...prev, output])}
+        <GlobalTerminal
+          onOutput={(output) =>
+            setDashboardTerminalOutput((prev) => [...prev, output])
+          }
           terminalOutput={dashboardTerminalOutput}
           isVisible={showGlobalTerminal}
           onVisibilityChange={setShowGlobalTerminal}

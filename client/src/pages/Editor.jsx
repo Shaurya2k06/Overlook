@@ -403,12 +403,24 @@ function Editor() {
   // Join room function
   const joinRoom = useCallback(
     async (roomIdToJoin) => {
+      console.log("joinRoom called with roomIdToJoin:", roomIdToJoin);
+      if (!roomIdToJoin) {
+        console.error("joinRoom called with undefined roomIdToJoin");
+        setJoinError("Room ID is required");
+        setIsJoining(false);
+        return;
+      }
+
       try {
         setIsJoining(true);
         setJoinError(null);
 
+        console.log(
+          "Making API call to join hybrid room:",
+          `${API_BASE_URL}/hybrid-rooms/join/${roomIdToJoin}`
+        );
         const response = await axios.post(
-          `${API_BASE_URL}/rooms/join/${roomIdToJoin}`,
+          `${API_BASE_URL}/hybrid-rooms/join/${roomIdToJoin}`,
           {
             userId: user.id,
             username: user.username,
@@ -438,8 +450,21 @@ function Editor() {
 
   // Auto-join room when component mounts
   useEffect(() => {
+    console.log(
+      "Editor useEffect - roomId:",
+      roomId,
+      "socket:",
+      !!socket,
+      "isConnected:",
+      isConnected
+    );
     if (roomId && socket && isConnected) {
+      console.log("Attempting to join room:", roomId);
       joinRoom(roomId);
+    } else if (!roomId) {
+      console.error("No roomId found in URL params");
+      setJoinError("No room ID provided in URL");
+      setIsJoining(false);
     }
   }, [roomId, socket, isConnected, joinRoom, user.id, user.username]);
 
@@ -447,7 +472,7 @@ function Editor() {
   const leaveRoom = async () => {
     if (roomId && socket) {
       try {
-        await axios.post(`${API_BASE_URL}/rooms/leave/${roomId}`, {
+        await axios.post(`${API_BASE_URL}/hybrid-rooms/leave/${roomId}`, {
           userId: user.id,
         });
 

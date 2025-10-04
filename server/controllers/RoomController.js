@@ -18,7 +18,7 @@ class RoomController {
 
       res.json({
         success: true,
-        roomId,
+        data: { roomId },
         message: "Room created successfully",
       });
     } catch (error) {

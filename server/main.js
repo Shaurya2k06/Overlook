@@ -26,8 +26,8 @@ const io = socketIo(server, {
 
 // Middleware
 connectMongoDB(URL)
-    .then(() => console.log("MongoDB Connected!!"))
-    .catch((err) => console.log("Error, Can't connect to DB", err));
+  .then(() => console.log("MongoDB Connected!!"))
+  .catch((err) => console.log("Error, Can't connect to DB", err));
 app.use(cors());
 app.use(express.json());
 

@@ -1,4 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { FileSystemProvider } from "./contexts/FileSystemContext";
 import Home from "./pages/Home";
 import Dashboard from "./pages/Dashboard";
 import About from "./pages/About";
@@ -14,6 +17,26 @@ function App() {
           <Route path="/about" element={<About />} />
           <Route path="/room/:roomId" element={<Editor />} />
         </Routes>
+        <ToastContainer
+          position="bottom-right"
+          autoClose={3000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="dark"
+          toastStyle={{
+            backgroundColor: "#1f2937",
+            color: "#ffffff",
+            border: "1px solid #374151",
+          }}
+          progressStyle={{
+            background: "#3b82f6",
+          }}
+        />
       </div>
     </Router>
   );

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { io } from "socket.io-client";
 import axios from "axios";
 import { toast } from "react-toastify";
+import { Copy } from "lucide-react";
 import { FileSystemProvider } from "../contexts/FileSystemContext";
 import CodeEditor from "../components/CodeEditor";
 import PromptInput from "../components/PromptInput";
@@ -233,7 +234,7 @@ function Editor() {
           `${data.createdBy} created folder: ${data.folderData.name}`,
           {
             position: "bottom-right",
-          }
+          },
         );
       }
     });
@@ -289,7 +290,7 @@ function Editor() {
           {
             userId: user.id,
             username: user.username,
-          }
+          },
         );
 
         if (response.data.success && socket) {
@@ -305,12 +306,12 @@ function Editor() {
         setJoinError(
           error.response?.data?.message ||
             error.message ||
-            "Failed to join room"
+            "Failed to join room",
         );
         setIsJoining(false);
       }
     },
-    [user.id, user.username, socket]
+    [user.id, user.username, socket],
   );
 
   // Auto-join room when component mounts
@@ -373,7 +374,7 @@ function Editor() {
       alert(
         `Failed to generate code: ${
           error.response?.data?.message || error.message
-        }`
+        }`,
       );
     }
   };
@@ -395,9 +396,11 @@ function Editor() {
 
   // Copy room URL to clipboard
   const copyRoomUrl = () => {
-    const url = window.location.href;
+    const url = roomId;
     navigator.clipboard.writeText(url).then(() => {
-      alert("Room URL copied to clipboard!");
+      toast.success("Room URL copied to clipboard!", {
+        position: "bottom-right",
+      });
     });
   };
 
@@ -454,6 +457,10 @@ function Editor() {
             <h1 className="text-xl font-semibold text-white">
               Overlook - Room {roomId}
             </h1>
+            <Copy
+              className="hover:bg-gray-700 cursor-pointer p-1 rounded"
+              onClick={copyRoomUrl}
+            ></Copy>
             <div className="flex items-center gap-2">
               <span
                 className={`px-3 py-1 rounded-full text-sm font-medium ${
@@ -467,12 +474,6 @@ function Editor() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <button
-              onClick={copyRoomUrl}
-              className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Copy Link
-            </button>
             <button
               onClick={leaveRoom}
               className="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"

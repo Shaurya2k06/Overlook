@@ -22,9 +22,31 @@ const CodeEditor = ({ onLanguageChange }) => {
     editorRef.current = editor;
     setIsEditorReady(true);
 
+    // Define custom terminal theme
+    window.monaco.editor.defineTheme('terminal-theme', {
+      base: 'vs-dark',
+      inherit: true,
+      rules: [
+        { token: '', foreground: '00ff00', background: '000000' },
+        { token: 'comment', foreground: '00aa00', fontStyle: 'italic' },
+        { token: 'keyword', foreground: '00ff88' },
+        { token: 'string', foreground: '88ff00' },
+        { token: 'number', foreground: '00ffff' },
+      ],
+      colors: {
+        'editor.background': '#000000',
+        'editor.foreground': '#00ff00',
+        'editor.lineHighlightBackground': '#003300',
+        'editor.selectionBackground': '#004400',
+        'editorCursor.foreground': '#00ff00',
+        'editorLineNumber.foreground': '#004400',
+        'editorLineNumber.activeForeground': '#00aa00',
+      }
+    });
+
     // Configure editor options
     editor.updateOptions({
-      fontSize: 14,
+      fontSize: 13,
       minimap: { enabled: false },
       scrollBeyondLastLine: false,
       automaticLayout: true,
@@ -32,7 +54,12 @@ const CodeEditor = ({ onLanguageChange }) => {
       lineNumbers: "on",
       folding: true,
       bracketPairColorization: { enabled: true },
+      fontFamily: "'Courier New', Consolas, Monaco, monospace",
+      lineHeight: 18,
     });
+    
+    // Apply terminal theme
+    window.monaco.editor.setTheme('terminal-theme');
   };
 
   // Get current file content and language
@@ -104,14 +131,14 @@ const CodeEditor = ({ onLanguageChange }) => {
   }
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="px-4 py-3 bg-gray-900 border-b border-gray-700 flex justify-between items-center">
+    <div className="flex flex-col h-full bg-black">
+      <div className="px-4 py-3 bg-black border-b border-green-400/30 flex justify-between items-center" style={{ fontFamily: "'Courier New', Consolas, Monaco, monospace" }}>
         <div className="flex items-center gap-3">
           <label
             htmlFor="language-select"
-            className="text-gray-400 text-sm font-medium"
+            className="text-green-400/80 text-xs font-medium"
           >
-            Language:
+            LANGUAGE:
           </label>
           <select
             id="language-select"
@@ -128,28 +155,29 @@ const CodeEditor = ({ onLanguageChange }) => {
                 onLanguageChange(e.target.value);
               }
             }}
-            className="px-2 py-1 bg-gray-800 text-white border border-gray-600 rounded text-sm focus:outline-none focus:border-blue-500"
+            className="px-2 py-1 bg-black text-green-400 border border-green-400/30 text-xs focus:outline-none focus:border-green-400"
+            style={{ fontFamily: "'Courier New', Consolas, Monaco, monospace" }}
           >
             {languageOptions.map((option) => (
-              <option key={option.value} value={option.value}>
+              <option key={option.value} value={option.value} className="bg-black text-green-400">
                 {option.label}
               </option>
             ))}
           </select>
         </div>
-        <div className="text-gray-400 text-sm">
-          {isEditorReady && <span>Ready</span>}
+        <div className="text-green-400/60 text-xs">
+          {isEditorReady && <span>READY</span>}
         </div>
       </div>
 
-      <div className="flex-1 min-h-0">
+      <div className="flex-1 min-h-0 bg-black">
         <Editor
           height="100%"
           language={currentFile.language}
           value={currentFile.content}
           onChange={handleEditorChange}
           onMount={handleEditorDidMount}
-          theme="vs-dark"
+          theme="terminal-theme"
           options={{
             selectOnLineNumbers: true,
             roundedSelection: false,
@@ -157,6 +185,9 @@ const CodeEditor = ({ onLanguageChange }) => {
             cursorStyle: "line",
             automaticLayout: true,
             mouseWheelZoom: true,
+            fontFamily: "'Courier New', Consolas, Monaco, monospace",
+            fontSize: 13,
+            lineHeight: 18,
           }}
         />
       </div>

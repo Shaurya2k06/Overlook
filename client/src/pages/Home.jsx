@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { TextAnimate } from "../components/ui/text-animate";
 import BusinessLogin from "../components/BusinessLogin";
 import BusinessSignup from "../components/BusinessSignup";
-import { Code, Users, Sparkles, Lock, Shield, Zap, Terminal, GitBranch, Activity, AlertTriangle, CheckCircle, ArrowRight } from "lucide-react";
+import { Code, Users, Sparkles, Lock, Shield, Zap, Terminal, GitBranch, Activity, AlertTriangle, CheckCircle, ArrowRight, Eye, Brain, Search } from "lucide-react";
 
 function Home() {
   const navigate = useNavigate();
@@ -13,10 +13,23 @@ function Home() {
   const [showLogin, setShowLogin] = useState(false);
   const [showSignup, setShowSignup] = useState(false);
   const [pipelineProgress, setPipelineProgress] = useState(0);
-  const [isProcessing, setIsProcessing] = useState(true);
-  const [currentCode, setCurrentCode] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [currentCode, setCurrentCode] = useState(
+    `// User Input\nfunction login(email, password) {\n  // Generate login code\n}`
+  );
   const [vulnerabilitiesFound, setVulnerabilitiesFound] = useState(0);
   const [vulnerabilitiesFixed, setVulnerabilitiesFixed] = useState(0);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [hasPlayedOnce, setHasPlayedOnce] = useState(false);
+  const [securityInsights, setSecurityInsights] = useState({
+    threatsBlocked: 0,
+    codeLinesScanned: 0,
+    vulnerabilitiesFixed: 0,
+    activeScans: 1
+  });
+  const [selectedTab, setSelectedTab] = useState('overview');
+  const techContainerRef = useRef(null);
 
   // Load Advercase font
   useEffect(() => {
@@ -41,6 +54,30 @@ function Home() {
   useEffect(() => {
     setIsVisible(true);
     
+    // Scroll listener for navbar
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+    };
+    window.addEventListener('scroll', handleScroll);
+    
+    // Security insights animation
+    const insightsInterval = setInterval(() => {
+      setSecurityInsights(prev => ({
+        threatsBlocked: prev.threatsBlocked + Math.floor(Math.random() * 3),
+        codeLinesScanned: prev.codeLinesScanned + Math.floor(Math.random() * 50) + 10,
+        vulnerabilitiesFixed: prev.vulnerabilitiesFixed + (Math.random() > 0.7 ? 1 : 0),
+        activeScans: Math.floor(Math.random() * 5) + 1
+      }));
+    }, 2000);
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      clearInterval(insightsInterval);
+    };
+  }, []);
+
+  useEffect(() => {
+    
     const scoreInterval = setInterval(() => {
       setSecurityScore(prev => {
         if (prev < 98) return prev + 1;
@@ -63,6 +100,9 @@ function Home() {
             setCurrentStep(prevStep => {
               const nextStep = (prevStep + 1) % codeSteps.length;
               
+              // Update current code display immediately
+              setCurrentCode(codeSteps[nextStep].input);
+              
               // Update vulnerabilities counters
               if (nextStep === 1) {
                 setVulnerabilitiesFound(2);
@@ -71,6 +111,12 @@ function Home() {
                 setVulnerabilitiesFixed(1);
               } else if (nextStep === 3) {
                 setVulnerabilitiesFixed(2);
+              }
+              
+              // Stop after one complete cycle if it has played once
+              if (nextStep === 0 && hasPlayedOnce) {
+                setIsProcessing(false);
+                return 0; // Reset to beginning
               }
               
               return nextStep;
@@ -148,12 +194,12 @@ function Home() {
     }
   ];
 
-  const [currentStep, setCurrentStep] = useState(0);
-
   return (
     <div className="min-h-screen bg-black text-white relative overflow-hidden">
       {/* Header */}
-      <header className="fixed top-0 w-full z-50 border-b border-white/10 bg-black/80 backdrop-blur-sm">
+      <header className={`fixed top-0 w-full z-50 transition-all duration-300 ${
+        isScrolled ? 'bg-black/90 backdrop-blur-md border-b border-white/10' : 'bg-transparent'
+      }`}>
         <div className="container mx-auto px-8">
           <div className="h-20 flex items-center justify-between">
             <h1 className="text-3xl font-light tracking-tight text-white" style={{ fontFamily: "Advercase, monospace" }}>
@@ -211,7 +257,7 @@ function Home() {
                     <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                   </span>
                 </button>
-                <button className="px-14 py-5 bg-transparent hover:bg-white/10 border-2 border-white text-white transition-all duration-300 text-lg uppercase tracking-widest" style={{ fontFamily: "Advercase, monospace" }}>
+                <button className="px-14 py-5 bg-transparent hover:bg-white/10 border border-white/50 text-white transition-all duration-300 text-lg uppercase tracking-widest hover:border-white rounded-lg" style={{ fontFamily: "Advercase, monospace" }}>
                   Watch Demo
                 </button>
               </div>
@@ -220,25 +266,22 @@ function Home() {
         </div>
       </section>
 
-      {/* SECTION 2: INTERACTIVE MULTI-AGENT PIPELINE */}
-      <section id="pipeline" className="relative min-h-screen flex items-center justify-center py-24 bg-black border-t border-white/10 snap-start">
+      {/* SECTION 2: INTERACTIVE MULTI-AGENT PIPELINE (simplified for stability) */}
+      <section id="pipeline" className="relative min-h-screen flex items-center justify-center py-24 bg-black snap-start">
         <div className="container mx-auto px-8">
           <div className="max-w-7xl mx-auto">
-            <h2 className="text-4xl font-light mb-16 text-center" style={{ fontFamily: "Advercase, monospace" }}>
-              <TextAnimate animation="slideUp" by="word">Interactive Security Pipeline</TextAnimate>
+            <h2 className="text-4xl font-light mb-8 text-center" style={{ fontFamily: "Advercase, monospace" }}>
+              Interactive Security Pipeline
             </h2>
-            
-            {/* Pipeline Controls */}
-            <div className="flex justify-center mb-12">
-              <div className="flex items-center gap-4 px-6 py-3 border-2 border-white/20 bg-black/60">
+
+            <div className="flex justify-center mb-8">
+              <div className="flex items-center gap-4 px-6 py-3 bg-black/60 rounded-lg">
                 <button
-                  onClick={() => setIsProcessing(!isProcessing)}
-                  className={`px-4 py-2 border-2 transition-all ${
-                    isProcessing 
-                      ? 'border-orange-400 text-orange-400 hover:bg-orange-400/10' 
-                      : 'border-[#00EFA6] text-[#00EFA6] hover:bg-[#00EFA6]/10'
-                  }`}
-                  style={{ fontFamily: "Advercase, monospace" }}
+                  onClick={() => {
+                    setIsProcessing(!isProcessing);
+                    if (!isProcessing) setHasPlayedOnce(true);
+                  }}
+                  className={`px-4 py-2 border rounded transition-all ${isProcessing ? 'border-orange-400 text-orange-400' : 'border-[#00EFA6] text-[#00EFA6]'}`}
                 >
                   {isProcessing ? 'PAUSE' : 'PLAY'}
                 </button>
@@ -248,202 +291,38 @@ function Home() {
                     setActiveAgent(0);
                     setVulnerabilitiesFound(0);
                     setVulnerabilitiesFixed(0);
-                    agents.forEach(agent => agent.progress = 0);
                   }}
-                  className="px-4 py-2 border-2 border-white/20 text-white hover:bg-white/10 transition-all"
-                  style={{ fontFamily: "Advercase, monospace" }}
+                  className="px-4 py-2 bg-white/5 text-white rounded"
                 >
                   RESTART
                 </button>
                 <div className="flex items-center gap-2 ml-4">
                   <div className="text-xs text-gray-400 uppercase">Step:</div>
-                  <div className="text-sm text-[#00EFA6]" style={{ fontFamily: "Advercase, monospace" }}>
-                    {currentStep + 1}/4
-                  </div>
+                  <div className="text-sm text-[#00EFA6]">{currentStep + 1}/4</div>
                 </div>
               </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              
-              {/* Code Flow Visualization */}
               <div className="lg:col-span-2">
-                <h3 className="text-sm uppercase tracking-widest text-gray-400 mb-6" style={{ fontFamily: "Advercase, monospace" }}>
-                  Live Code Processing
-                </h3>
-                
-                {/* Code Display */}
-                <div className="bg-black border-2 border-white/20 p-6 mb-6 relative overflow-hidden">
-                  <div className="flex items-center gap-2 mb-4 pb-4 border-b border-white/20">
-                    <div className="flex gap-2">
-                      <div className="w-3 h-3 rounded-full bg-red-500" />
-                      <div className="w-3 h-3 rounded-full bg-yellow-500" />
-                      <div className="w-3 h-3 rounded-full bg-green-500" />
-                    </div>
-                    <span className="text-gray-400 text-xs ml-4">secure_login.js</span>
-                    <div className="ml-auto flex items-center gap-2">
-                      <div className="text-xs text-gray-400">{codeSteps[currentStep].stage}</div>
-                      {isProcessing && <div className="w-2 h-2 bg-[#00EFA6] rounded-full animate-pulse" />}
-                    </div>
-                  </div>
-                  
-                  <pre className="text-sm text-white font-mono leading-relaxed">
-                    {codeSteps[currentStep].input}
+                <h3 className="text-sm uppercase tracking-widest text-gray-400 mb-4">Live Code Processing</h3>
+                <div className="p-4 bg-white/5 rounded mb-4">
+                  <div className="text-xs text-gray-400 mb-2">Stage: {codeSteps[currentStep].stage}</div>
+                  <pre className="text-sm font-mono text-white overflow-x-auto p-2 bg-black/30 rounded">
+{codeSteps[currentStep].input}
                   </pre>
-                  
-                  {/* Vulnerability Indicators */}
-                  {codeSteps[currentStep].vulnerabilities.length > 0 && (
-                    <div className="absolute top-4 right-4 space-y-1">
-                      {codeSteps[currentStep].vulnerabilities.map((vuln, idx) => (
-                        <div key={idx} className="bg-red-500 text-white text-xs px-2 py-1 uppercase tracking-wide animate-pulse">
-                          ⚠ {vuln}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  
-                  {/* Success Indicator */}
-                  {codeSteps[currentStep].vulnerabilities.length === 0 && currentStep > 0 && (
-                    <div className="absolute top-4 right-4 bg-[#00EFA6] text-black text-xs px-3 py-1 uppercase tracking-wide">
-                      ✓ SECURE
-                    </div>
-                  )}
-                </div>
-
-                {/* Process Flow Diagram */}
-                <div className="relative">
-                  <h4 className="text-xs text-gray-400 uppercase mb-4">Agent Processing Flow</h4>
-                  <div className="flex items-center justify-between">
-                    {agents.map((agent, idx) => {
-                      const Icon = agent.icon;
-                      const isActive = idx === activeAgent;
-                      const isCompleted = idx < activeAgent || (idx === activeAgent && agents[idx].progress === 100);
-                      
-                      return (
-                        <div key={idx} className="flex flex-col items-center relative">
-                          {/* Connection Line */}
-                          {idx < agents.length - 1 && (
-                            <div className="absolute top-8 left-full w-full h-0.5 bg-white/20">
-                              <div 
-                                className="h-full bg-[#00EFA6] transition-all duration-500"
-                                style={{ 
-                                  width: isCompleted ? '100%' : isActive ? '50%' : '0%' 
-                                }}
-                              />
-                            </div>
-                          )}
-                          
-                          {/* Agent Node */}
-                          <div className={`w-16 h-16 border-2 flex items-center justify-center transition-all duration-500 ${
-                            isActive 
-                              ? 'border-[#00EFA6] bg-[#00EFA6]/20 scale-110' 
-                              : isCompleted 
-                                ? 'border-[#00EFA6] bg-[#00EFA6]/10' 
-                                : 'border-white/20 bg-black'
-                          }`}>
-                            <Icon 
-                              className="w-8 h-8" 
-                              style={{ color: isActive || isCompleted ? agent.color : '#666' }} 
-                            />
-                          </div>
-                          
-                          {/* Agent Info */}
-                          <div className="mt-3 text-center max-w-24">
-                            <div className="text-xs text-white mb-1">{agent.name.split(' ')[0]}</div>
-                            {isActive && (
-                              <div className="text-xs text-gray-400">{agent.task}</div>
-                            )}
-                          </div>
-                          
-                          {/* Progress Bar */}
-                          {isActive && (
-                            <div className="mt-2 w-20 h-1 bg-white/20">
-                              <div 
-                                className="h-full bg-[#00EFA6] transition-all duration-300"
-                                style={{ width: `${agents[idx].progress}%` }}
-                              />
-                            </div>
-                          )}
-                          
-                          {/* Completion Check */}
-                          {isCompleted && (
-                            <CheckCircle className="w-4 h-4 text-[#00EFA6] mt-2" />
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
                 </div>
               </div>
 
-              {/* Live Security Dashboard */}
               <div>
-                <h3 className="text-sm uppercase tracking-widest text-gray-400 mb-6" style={{ fontFamily: "Advercase, monospace" }}>
-                  Security Dashboard
-                </h3>
-                
-                {/* Real-time Security Score */}
-                <div className="text-center p-6 border-2 border-[#00EFA6]/30 bg-[#00EFA6]/10 mb-6">
-                  <div className="text-5xl font-light text-[#00EFA6] mb-2">{securityScore}</div>
-                  <div className="text-sm text-gray-400 uppercase">Security Score</div>
-                  <div className="mt-2 h-2 bg-black/50">
-                    <div 
-                      className="h-full bg-[#00EFA6] transition-all duration-500"
-                      style={{ width: `${securityScore}%` }}
-                    />
-                  </div>
-                </div>
-
-                {/* Vulnerability Tracking */}
-                <div className="space-y-4 mb-6">
-                  <div className="p-4 border-2 border-red-400/30 bg-red-400/10">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="text-xs text-gray-400 uppercase">Vulnerabilities Found</div>
-                      <AlertTriangle className="w-4 h-4 text-red-400" />
-                    </div>
-                    <div className="text-2xl font-light text-red-400">{vulnerabilitiesFound}</div>
-                  </div>
-                  
-                  <div className="p-4 border-2 border-[#00EFA6]/30 bg-[#00EFA6]/10">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="text-xs text-gray-400 uppercase">Vulnerabilities Fixed</div>
-                      <Shield className="w-4 h-4 text-[#00EFA6]" />
-                    </div>
-                    <div className="text-2xl font-light text-[#00EFA6]">{vulnerabilitiesFixed}</div>
-                  </div>
-                </div>
-
-                {/* Processing Stats */}
-                <div className="grid grid-cols-1 gap-4">
-                  <div className="p-3 border-2 border-white/20 bg-white/5">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Zap className="w-3 h-3 text-blue-400" />
-                      <div className="text-xs text-gray-400 uppercase">Processing Speed</div>
-                    </div>
-                    <div className="text-lg font-light text-white">1.2s</div>
-                  </div>
-                  
-                  <div className="p-3 border-2 border-white/20 bg-white/5">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Activity className="w-3 h-3 text-green-400" />
-                      <div className="text-xs text-gray-400 uppercase">Lines Analyzed</div>
-                    </div>
-                    <div className="text-lg font-light text-white">{(currentStep + 1) * 156}</div>
-                  </div>
-                </div>
-
-                {/* Agent Status */}
-                <div className="mt-6">
-                  <h4 className="text-xs text-gray-400 uppercase mb-3">Current Agent Status</h4>
-                  <div className="p-4 border-2 border-white/20 bg-black/40">
-                    <div className="flex items-center gap-3">
-                      <div className="w-3 h-3 rounded-full bg-[#00EFA6] animate-pulse" />
-                      <div>
-                        <div className="text-sm text-white">{agents[activeAgent].name}</div>
-                        <div className="text-xs text-gray-400">{agents[activeAgent].status}</div>
-                      </div>
-                    </div>
-                  </div>
+                <h3 className="text-sm uppercase tracking-widest text-gray-400 mb-4">Security Dashboard</h3>
+                <div className="p-4 bg-white/5 rounded">
+                  <div className="text-xs text-gray-400">Threats Blocked</div>
+                  <div className="text-2xl text-red-400 mb-2">{securityInsights.threatsBlocked}</div>
+                  <div className="text-xs text-gray-400">Lines Scanned</div>
+                  <div className="text-2xl text-blue-400 mb-2">{securityInsights.codeLinesScanned.toLocaleString()}</div>
+                  <div className="text-xs text-gray-400">Vulnerabilities Fixed</div>
+                  <div className="text-2xl text-[#00EFA6]">{vulnerabilitiesFixed}</div>
                 </div>
               </div>
             </div>
@@ -467,7 +346,7 @@ function Home() {
                 
                 <div className="space-y-4">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 flex items-center justify-center border-2 border-red-400/30 bg-red-400/10">
+                    <div className="w-12 h-12 flex items-center justify-center border border-red-400/30 bg-red-400/10">
                       <AlertTriangle className="w-6 h-6 text-red-400" />
                     </div>
                     <div>
@@ -476,7 +355,7 @@ function Home() {
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 flex items-center justify-center border-2 border-orange-400/30 bg-orange-400/10">
+                    <div className="w-12 h-12 flex items-center justify-center border border-orange-400/30 bg-orange-400/10">
                       <AlertTriangle className="w-6 h-6 text-orange-400" />
                     </div>
                     <div>
@@ -488,7 +367,7 @@ function Home() {
               </div>
 
               <div className="relative">
-                <div className="bg-black border-2 border-red-400/30 p-6 font-mono text-sm">
+                <div className="bg-black border border-red-400/30 p-6 font-mono text-sm">
                   <div className="flex items-center gap-2 mb-4 pb-4 border-b border-white/20">
                     <div className="flex gap-2">
                       <div className="w-3 h-3 rounded-full bg-red-500" />
@@ -529,9 +408,9 @@ function Home() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="group p-8 border-2 border-white/20 hover:border-[#00EFA6]/50 transition-all duration-500 bg-white/5 hover:bg-white/10">
+              <div className="group p-8 bg-white/5 hover:border-[#00EFA6]/50 transition-all duration-500 hover:bg-white/10">
                 <div className="flex items-start gap-4 mb-4">
-                  <div className="p-2 border-2 border-[#00EFA6]/30 group-hover:border-[#00EFA6]/60 transition-colors">
+                  <div className="p-2 border border-[#00EFA6]/30 group-hover:border-[#00EFA6]/60 transition-colors">
                     <Shield className="w-6 h-6 text-[#00EFA6]" />
                   </div>
                   <div>
@@ -543,9 +422,9 @@ function Home() {
                 </div>
               </div>
 
-              <div className="group p-8 border-2 border-white/20 hover:border-[#00EFA6]/50 transition-all duration-500 bg-white/5 hover:bg-white/10">
+              <div className="group p-8 bg-white/5 hover:border-[#00EFA6]/50 transition-all duration-500 hover:bg-white/10">
                 <div className="flex items-start gap-4 mb-4">
-                  <div className="p-2 border-2 border-[#00EFA6]/30 group-hover:border-[#00EFA6]/60 transition-colors">
+                  <div className="p-2 border border-[#00EFA6]/30 group-hover:border-[#00EFA6]/60 transition-colors">
                     <AlertTriangle className="w-6 h-6 text-[#00EFA6]" />
                   </div>
                   <div>
@@ -557,9 +436,9 @@ function Home() {
                 </div>
               </div>
 
-              <div className="group p-8 border-2 border-white/20 hover:border-[#00EFA6]/50 transition-all duration-500 bg-white/5 hover:bg-white/10">
+              <div className="group p-8 bg-white/5 hover:border-[#00EFA6]/50 transition-all duration-500 hover:bg-white/10">
                 <div className="flex items-start gap-4 mb-4">
-                  <div className="p-2 border-2 border-[#00EFA6]/30 group-hover:border-[#00EFA6]/60 transition-colors">
+                  <div className="p-2 border border-[#00EFA6]/30 group-hover:border-[#00EFA6]/60 transition-colors">
                     <GitBranch className="w-6 h-6 text-[#00EFA6]" />
                   </div>
                   <div>
@@ -571,9 +450,9 @@ function Home() {
                 </div>
               </div>
 
-              <div className="group p-8 border-2 border-white/20 hover:border-[#00EFA6]/50 transition-all duration-500 bg-white/5 hover:bg-white/10">
+              <div className="group p-8 bg-white/5 hover:border-[#00EFA6]/50 transition-all duration-500 hover:bg-white/10">
                 <div className="flex items-start gap-4 mb-4">
-                  <div className="p-2 border-2 border-[#00EFA6]/30 group-hover:border-[#00EFA6]/60 transition-colors">
+                  <div className="p-2 border border-[#00EFA6]/30 group-hover:border-[#00EFA6]/60 transition-colors">
                     <Zap className="w-6 h-6 text-[#00EFA6]" />
                   </div>
                   <div>
@@ -590,49 +469,95 @@ function Home() {
       </section>
 
       {/* SECTION 5: TECHNOLOGY */}
-      <section id="technology" className="relative min-h-screen flex items-center justify-center py-24 bg-black border-t border-white/10 snap-start">
+      <section 
+        id="technology" 
+        className="relative min-h-screen flex items-center justify-center py-24 bg-black snap-start"
+        ref={techContainerRef}
+      >
         <div className="container mx-auto px-8">
           <div className="max-w-6xl mx-auto">
             <div className="text-center mb-16">
               <span className="text-[#00EFA6] text-sm tracking-widest uppercase mb-4 block" style={{ fontFamily: "Advercase, monospace" }}>Technology</span>
               <h3 className="text-4xl font-light mb-6" style={{ fontFamily: "Advercase, monospace" }}>
-                <TextAnimate animation="slideUp" by="word">Powered By Industry Leaders</TextAnimate>
+                <TextAnimate animation="slideUp" by="word">How Agents Use Overlook</TextAnimate>
               </h3>
               <p className="text-gray-300 text-lg max-w-2xl mx-auto">
-                Built with cutting-edge AI models and battle-tested security tools.
+                Watch how different AI agents connect through Overlook to secure your code.
               </p>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-12">
-              {[
-                { name: "GPT-4o", desc: "Code Generation", color: "#00EFA6" },
-                { name: "Claude 3.5", desc: "Security Analysis", color: "#60A5FA" },
-                { name: "Groq Llama", desc: "Fast Debugging", color: "#F59E0B" },
-                { name: "Ollama", desc: "Red Team Testing", color: "#EF4444" },
-              ].map((tech, idx) => (
-                <div 
-                  key={idx}
-                  className="group p-6 border-2 border-white/20 hover:border-[#00EFA6]/50 transition-all duration-500 bg-white/5 hover:bg-white/10 text-center"
-                >
-                  <div 
-                    className="w-12 h-12 mx-auto mb-4 flex items-center justify-center border-2 transition-colors"
-                    style={{ borderColor: `${tech.color}60` }}
-                  >
-                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: tech.color }} />
-                  </div>
-                  <h4 className="text-lg font-medium text-white mb-2" style={{ fontFamily: "Advercase, monospace" }}>{tech.name}</h4>
-                  <p className="text-xs text-gray-400 uppercase tracking-wider">{tech.desc}</p>
+            {/* Central Overlook Hub with Custom Connections */}
+            <div className="relative mb-16">
+              {/* Flowing connection lines */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="relative w-96 h-96">
+                  {/* Diagonal connection lines */}
+                  {[0, 1, 2, 3].map(idx => (
+                    <div
+                      key={idx}
+                      className="absolute w-0.5 bg-gradient-to-br from-transparent via-[#00EFA6]/30 to-transparent animate-pulse"
+                      style={{
+                        height: '120px',
+                        transformOrigin: 'center',
+                        transform: `rotate(${idx * 90 + 45}deg)`,
+                        left: '50%',
+                        top: '50%',
+                        marginLeft: '-1px',
+                        marginTop: '-60px'
+                      }}
+                    />
+                  ))}
                 </div>
-              ))}
+              </div>
+
+              <div className="flex justify-center mb-8 relative z-10">
+                <div className="w-32 h-32 flex items-center justify-center relative">
+                  <img 
+                    src="/logo.png" 
+                    alt="Overlook Logo" 
+                    className="w-full h-full object-contain"
+                  />
+                  <div className="absolute -bottom-8 text-center">
+                    <div className="text-lg font-bold text-white" style={{ fontFamily: "Advercase, monospace" }}>OVERLOOK</div>
+                    <div className="text-xs text-gray-400">Security Hub</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* AI Models around Overlook */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-8 relative z-10">
+                {[
+                  { name: "GPT-4o", desc: "Code Generation", color: "#00EFA6" },
+                  { name: "Claude 3.5", desc: "Security Analysis", color: "#60A5FA" },
+                  { name: "Groq Llama", desc: "Fast Debugging", color: "#F59E0B" },
+                  { name: "Ollama", desc: "Red Team Testing", color: "#EF4444" },
+                ].map((tech, idx) => {
+                  return (
+                    <div 
+                      key={idx}
+                      className="group p-6 bg-white/5 hover:bg-white/10 text-center rounded-lg transition-all duration-500 hover:scale-105"
+                    >
+                      <div 
+                        className="w-12 h-12 mx-auto mb-4 flex items-center justify-center rounded-lg"
+                        style={{ backgroundColor: `${tech.color}20` }}
+                      >
+                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: tech.color }} />
+                      </div>
+                      <h4 className="text-lg font-medium text-white mb-2" style={{ fontFamily: "Advercase, monospace" }}>{tech.name}</h4>
+                      <p className="text-xs text-gray-400 uppercase tracking-wider">{tech.desc}</p>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
 
-            <div className="p-8 border-2 border-white/20 bg-white/5">
+            <div className="p-8 bg-white/5 rounded-lg">
               <div className="text-center mb-6">
                 <h4 className="text-sm uppercase tracking-widest text-gray-400 mb-2">Integrated Security Tools</h4>
               </div>
               <div className="flex flex-wrap justify-center gap-6">
                 {["Semgrep", "ESLint Security", "npm audit", "Custom Patterns"].map((tool, idx) => (
-                  <div key={idx} className="px-4 py-2 border-2 border-white/20 bg-white/5 text-sm text-white">
+                  <div key={idx} className="px-4 py-2 bg-white/5 text-sm text-white rounded">
                     {tool}
                   </div>
                 ))}
@@ -654,19 +579,19 @@ function Home() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
-              <div className="text-center p-8 border-2 border-white/20 bg-white/5">
+              <div className="text-center p-8 bg-white/5">
                 <div className="text-5xl font-light text-[#00EFA6] mb-4" style={{ fontFamily: "Advercase, monospace" }}>80%+</div>
                 <div className="text-white mb-2" style={{ fontFamily: "Advercase, monospace" }}>Vulnerability Reduction</div>
                 <div className="text-sm text-gray-400" style={{ fontFamily: "Advercase, monospace" }}>Compared to standard AI code generation</div>
               </div>
 
-              <div className="text-center p-8 border-2 border-white/20 bg-white/5">
+              <div className="text-center p-8 bg-white/5">
                 <div className="text-5xl font-light text-[#00EFA6] mb-4">2.3s</div>
                 <div className="text-white mb-2">Average Analysis Time</div>
                 <div className="text-sm text-gray-400">Complete security validation in seconds</div>
               </div>
 
-              <div className="text-center p-8 border-2 border-white/20 bg-white/5">
+              <div className="text-center p-8 bg-white/5">
                 <div className="text-5xl font-light text-[#00EFA6] mb-4">100%</div>
                 <div className="text-white mb-2">Coverage</div>
                 <div className="text-sm text-gray-400">Every line of code is security validated</div>
@@ -737,6 +662,7 @@ function Home() {
           100% { transform: translateX(300%); }
         }
       `}</style>
+    
     </div>
   );
 }

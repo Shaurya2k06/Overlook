@@ -18,6 +18,7 @@ import {
   CheckCircle,
   ArrowRight,
 } from "lucide-react";
+import GlobalTerminal from "../components/GlobalTerminal";
 
 const API_BASE_URL = "http://localhost:3001/api";
 
@@ -28,12 +29,6 @@ function Dashboard() {
   const [isCreating, setIsCreating] = useState(false);
   const [isJoining, setIsJoining] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [terminalText, setTerminalText] = useState("");
-  const [showCursor, setShowCursor] = useState(true);
-  const [terminalInput, setTerminalInput] = useState("");
-  const [terminalHistory, setTerminalHistory] = useState([]);
-  const [commandHistory, setCommandHistory] = useState([]);
-  const [historyIndex, setHistoryIndex] = useState(-1);
   const [systemSpecs, setSystemSpecs] = useState({
     platform: "",
     arch: "",
@@ -48,29 +43,77 @@ function Dashboard() {
     uptime: 0,
     loadAverage: [0, 0, 0],
   });
-  const [recentRooms] = useState([
-    {
-      id: "room_abc123",
-      name: "auth_vulnerability_fix",
-      status: "active",
-      participants: 2,
-      created: "14:32",
-    },
-    {
-      id: "room_def456",
-      name: "api_security_audit",
-      status: "idle",
-      participants: 1,
-      created: "13:47",
-    },
-    {
-      id: "room_ghi789",
-      name: "db_migration_secure",
-      status: "completed",
-      participants: 3,
-      created: "12:15",
-    },
-  ]);
+  const [dashboardTerminalOutput, setDashboardTerminalOutput] = useState([]);
+  const [showGlobalTerminal, setShowGlobalTerminal] = useState(false);
+
+  // Terminal notification function
+  const addTerminalNotification = (message, type = 'info') => {
+    const timestamp = new Date().toLocaleTimeString('en-US', { hour12: false });
+    const notification = {
+      id: Date.now(),
+      message,
+      type,
+      timestamp
+    };
+    setDashboardTerminalOutput(prev => [...prev, notification]);
+    
+    // Auto-show terminal for notifications
+    setShowGlobalTerminal(true);
+    
+    // Auto-hide after 5 seconds for non-error messages
+    if (type !== 'error') {
+      setTimeout(() => {
+        setShowGlobalTerminal(false);
+      }, 5000);
+    }
+  };
+
+  // Real recent rooms state
+  const [recentRooms, setRecentRooms] = useState([]);
+
+  // Load recent rooms from localStorage on component mount
+  useEffect(() => {
+    const loadRecentRooms = () => {
+      const stored = localStorage.getItem('overlook_recent_rooms');
+      if (stored) {
+        try {
+          const rooms = JSON.parse(stored);
+          // Sort by lastJoined timestamp and take the 5 most recent
+          const sortedRooms = rooms
+            .sort((a, b) => new Date(b.lastJoined) - new Date(a.lastJoined))
+            .slice(0, 5);
+          setRecentRooms(sortedRooms);
+        } catch (error) {
+          console.error('Error loading recent rooms:', error);
+          setRecentRooms([]);
+        }
+      }
+    };
+
+    loadRecentRooms();
+  }, []);
+
+  // Function to add a room to recent rooms
+  const addToRecentRooms = (roomData) => {
+    const newRoom = {
+      id: roomData.id,
+      name: roomData.name || `room_${roomData.id}`,
+      status: 'active',
+      participants: roomData.participants || 1,
+      created: new Date().toLocaleTimeString('en-US', { hour12: false }),
+      lastJoined: new Date().toISOString()
+    };
+
+    setRecentRooms(prev => {
+      // Remove existing room if present and add new one at the beginning
+      const filtered = prev.filter(room => room.id !== newRoom.id);
+      const updated = [newRoom, ...filtered].slice(0, 5); // Keep only 5 most recent
+      
+      // Save to localStorage
+      localStorage.setItem('overlook_recent_rooms', JSON.stringify(updated));
+      return updated;
+    });
+  };
 
   // Generate user ID for session
   const [user] = useState({
@@ -122,160 +165,11 @@ function Dashboard() {
     }
   };
 
-  // Terminal typing effect
-  useEffect(() => {
-    const messages = [
-      "$ overlook --status",
-      "System: ONLINE",
-      "Security: ENABLED",
-      "Ready for secure collaboration...",
-      "Type 'help' for available commands",
-      "",
-    ];
 
-    let messageIndex = 0;
-    let charIndex = 0;
 
-    const typeMessage = () => {
-      if (messageIndex < messages.length) {
-        if (charIndex < messages[messageIndex].length) {
-          setTerminalText((prev) => prev + messages[messageIndex][charIndex]);
-          charIndex++;
-          setTimeout(typeMessage, 50);
-        } else {
-          setTerminalText((prev) => prev + "\n");
-          messageIndex++;
-          charIndex = 0;
-          setTimeout(typeMessage, 500);
-        }
-      }
-    };
 
-    const timeout = setTimeout(typeMessage, 1000);
-    return () => clearTimeout(timeout);
-  }, []);
 
-  // Handle terminal commands
-  const handleTerminalCommand = (command) => {
-    const cmd = command.trim().toLowerCase();
-    const args = cmd.split(" ");
-    const baseCmd = args[0];
 
-    // Add command to history
-    setCommandHistory((prev) => [...prev, command]);
-    setHistoryIndex(-1);
-
-    let output = "";
-
-    switch (baseCmd) {
-      case "help":
-        output = `Available commands:
-  create                 - Create a new secure session
-  join [session_id]      - Join an existing session
-  list                   - List recent sessions
-  status                 - Show system status
-  scan [url]            - Run security scan on URL
-  clear                 - Clear terminal
-  exit                  - Return to dashboard`;
-        break;
-
-      case "create":
-        output = "Initializing new secure session...";
-        setTimeout(() => createRoom(), 1000);
-        break;
-
-      case "join":
-        if (args[1]) {
-          output = `Connecting to session: ${args[1]}...`;
-          setTimeout(() => joinRoom(args[1]), 1000);
-        } else {
-          output = "Usage: join [session_id]";
-        }
-        break;
-
-      case "list":
-        output =
-          "Recent sessions:\n" +
-          recentRooms
-            .map((room) => `  ${room.id} - ${room.name} (${room.status})`)
-            .join("\n");
-        break;
-
-      case "status":
-        output = `System Status:
-  Uptime: ${systemStats.uptime}
-  Active Connections: ${systemStats.activeConnections}
-  Security Level: ${systemStats.securityLevel}
-  Last Scan: ${systemStats.lastScan}`;
-        break;
-
-      case "scan":
-        if (args[1]) {
-          output = `Scanning ${args[1]} for vulnerabilities...
-[████████████████████] 100%
-Scan complete: No critical vulnerabilities found`;
-        } else {
-          output = "Usage: scan [url]";
-        }
-        break;
-
-      case "clear":
-        setTerminalHistory([]);
-        return;
-
-      case "exit":
-        output = "Returning to dashboard...";
-        break;
-
-      default:
-        output = `Command not found: ${baseCmd}. Type 'help' for available commands.`;
-    }
-
-    setTerminalHistory((prev) => [
-      ...prev,
-      { type: "input", content: `$ ${command}` },
-      { type: "output", content: output },
-    ]);
-  };
-
-  const handleTerminalKeyDown = (e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      if (terminalInput.trim()) {
-        handleTerminalCommand(terminalInput);
-        setTerminalInput("");
-      }
-    } else if (e.key === "ArrowUp") {
-      e.preventDefault();
-      if (historyIndex < commandHistory.length - 1) {
-        const newIndex = historyIndex + 1;
-        setHistoryIndex(newIndex);
-        setTerminalInput(
-          commandHistory[commandHistory.length - 1 - newIndex] || ""
-        );
-      }
-    } else if (e.key === "ArrowDown") {
-      e.preventDefault();
-      if (historyIndex > 0) {
-        const newIndex = historyIndex - 1;
-        setHistoryIndex(newIndex);
-        setTerminalInput(
-          commandHistory[commandHistory.length - 1 - newIndex] || ""
-        );
-      } else if (historyIndex === 0) {
-        setHistoryIndex(-1);
-        setTerminalInput("");
-      }
-    }
-  };
-
-  // Cursor blink effect
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setShowCursor((prev) => !prev);
-    }, 500);
-    return () => clearInterval(interval);
-  }, []);
 
   // Update time every second
   useEffect(() => {
@@ -290,12 +184,28 @@ Scan complete: No critical vulnerabilities found`;
     getRealSystemInfo();
     getRealTimeData();
 
+    // Handle terminal output
+    const handleDashboardTerminalOutput = (output) => {
+      setDashboardTerminalOutput(prev => [...prev, output]);
+    };
+
+    // Handle terminal room creation command
+    const handleTerminalCreateRoom = () => {
+      createRoom();
+    };
+
+    // Add event listener for terminal commands
+    window.addEventListener('terminal-create-room', handleTerminalCreateRoom);
+
     // Update real-time data every 5 seconds
     const interval = setInterval(() => {
       getRealTimeData();
     }, 5000);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('terminal-create-room', handleTerminalCreateRoom);
+    };
   }, []);
 
   useEffect(() => {
@@ -308,10 +218,18 @@ Scan complete: No critical vulnerabilities found`;
     try {
       const response = await axios.post(`${API_BASE_URL}/rooms/create`);
       const { roomId } = response.data;
+      
+      // Add to recent rooms
+      addToRecentRooms({
+        id: roomId,
+        name: `room_${roomId}`,
+        participants: 1
+      });
+      
       navigate(`/room/${roomId}`);
     } catch (error) {
       console.error("Failed to create room:", error);
-      alert("Failed to create room");
+      addTerminalNotification("Failed to create room", 'error');
     } finally {
       setIsCreating(false);
     }
@@ -321,10 +239,17 @@ Scan complete: No critical vulnerabilities found`;
   const joinRoom = async (roomId) => {
     setIsJoining(true);
     try {
+      // Add to recent rooms
+      addToRecentRooms({
+        id: roomId,
+        name: `room_${roomId}`,
+        participants: 1
+      });
+      
       navigate(`/room/${roomId}`);
     } catch (error) {
       console.error("Error joining room:", error);
-      alert("Failed to join room");
+      addTerminalNotification("Failed to join room", 'error');
     } finally {
       setIsJoining(false);
     }
@@ -332,7 +257,7 @@ Scan complete: No critical vulnerabilities found`;
 
   const handleJoinRoom = async () => {
     if (!roomId.trim()) {
-      alert("Please enter a room ID");
+      addTerminalNotification("Please enter a room ID", 'warning');
       return;
     }
     await joinRoom(roomId.trim());
@@ -410,106 +335,39 @@ Scan complete: No critical vulnerabilities found`;
               RECENT_SESSIONS
             </h3>
             <div className="space-y-2">
-              {recentRooms.map((room) => (
-                <div
-                  key={room.id}
-                  className="p-2 border border-green-400/20 hover:border-green-400/40 hover:bg-green-400/5 cursor-pointer transition-all text-xs"
-                  onClick={() => joinRoom(room.id)}
-                >
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-green-400 truncate">{room.name}</span>
-                    <div
-                      className={`flex items-center gap-1 ${getStatusColor(
-                        room.status
-                      )}`}
-                    >
-                      {getStatusIcon(room.status)}
+              {recentRooms.length > 0 ? (
+                recentRooms.map((room) => (
+                  <div
+                    key={room.id}
+                    className="p-2 border border-green-400/20 hover:border-green-400/40 hover:bg-green-400/5 cursor-pointer transition-all text-xs"
+                    onClick={() => joinRoom(room.id)}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-green-400 truncate">{room.name}</span>
+                      <div
+                        className={`flex items-center gap-1 ${getStatusColor(
+                          room.status
+                        )}`}
+                      >
+                        {getStatusIcon(room.status)}
+                      </div>
+                    </div>
+                    <div className="flex justify-between text-green-400/60">
+                      <span>{room.participants} users</span>
+                      <span>{room.created}</span>
                     </div>
                   </div>
-                  <div className="flex justify-between text-green-400/60">
-                    <span>{room.participants} users</span>
-                    <span>{room.created}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Interactive Terminal - Expanded */}
-          <div className="flex-1 border border-green-400/30 bg-green-400/5 flex flex-col">
-            <div className="flex items-center gap-2 p-2 border-b border-green-400/20">
-              <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-              <span className="text-green-400/80 text-xs">TERMINAL</span>
-              <div className="ml-auto text-green-400/60 text-xs">
-                overlook@system:~$
-              </div>
-            </div>
-
-            {/* Terminal History - Expanded */}
-            <div
-              className="flex-1 overflow-y-auto p-3 text-xs text-green-400/80 space-y-1 font-mono"
-              style={{
-                fontFamily: "'Courier New', Consolas, Monaco, monospace",
-              }}
-            >
-              {terminalHistory.map((entry, index) => (
-                <div
-                  key={index}
-                  className={
-                    entry.type === "input"
-                      ? "text-green-400"
-                      : "text-green-400/60"
-                  }
-                >
-                  {entry.content.split("\n").map((line, lineIndex) => (
-                    <div key={lineIndex}>{line}</div>
-                  ))}
-                </div>
-              ))}
-              {terminalHistory.length === 0 && (
-                <div className="text-green-400/60">
-                  <div>Welcome to Overlook Terminal v2.1.3</div>
-                  <div>Type 'help' for available commands</div>
-                  <div className="mt-2">
-                    {terminalText}
-                    {showCursor && (
-                      <span className="bg-green-400 text-black">_</span>
-                    )}
-                  </div>
+                ))
+              ) : (
+                <div className="text-green-400/60 text-xs p-2 border border-green-400/20 text-center">
+                  No recent sessions found.
+                  <br />
+                  Create or join a room to see history.
                 </div>
               )}
-              <div className="text-green-400 flex items-center">
-                <span className="text-green-400/80 mr-1">$</span>
-                <span>{terminalInput}</span>
-                {showCursor && (
-                  <span className="bg-green-400 text-black ml-1">_</span>
-                )}
-              </div>
-            </div>
-
-            {/* Terminal Input */}
-            <div className="flex items-center gap-2 p-3 border-t border-green-400/20">
-              <span className="text-green-400 text-sm">$</span>
-              <input
-                type="text"
-                value={terminalInput}
-                onChange={(e) => setTerminalInput(e.target.value)}
-                onKeyDown={handleTerminalKeyDown}
-                placeholder="Type command..."
-                className="flex-1 bg-transparent border-none outline-none text-green-400 text-sm placeholder-green-400/40 font-mono"
-                style={{
-                  fontFamily: "'Courier New', Consolas, Monaco, monospace",
-                }}
-                autoComplete="off"
-              />
-            </div>
-
-            {/* Command Help */}
-            <div className="px-3 pb-2 text-xs text-green-400/40 border-t border-green-400/10">
-              Commands: help | create | join [id] | list | status | scan [url] |
-              clear
             </div>
           </div>
+
         </div>
 
         {/* Main Content */}
@@ -662,94 +520,26 @@ Scan complete: No critical vulnerabilities found`;
             </div>
           </div>
 
-          {/* Real System Monitor with Matrix Animation */}
-          <div className="border-t border-green-400/30 bg-black p-4 relative overflow-hidden">
-            <div className="flex items-center gap-2 mb-3 text-xs">
-              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-              <span className="text-green-400/80">SYSTEM_SPECS</span>
-              <div
-                className="ml-auto text-green-400/60 text-xs font-mono"
-                style={{
-                  fontFamily: "'Courier New', Consolas, Monaco, monospace",
-                }}
-              >
-                {currentTime.toLocaleTimeString("en-US", { hour12: false })}
-              </div>
-            </div>
 
-            {/* Matrix Rain Effect */}
-            <div className="relative h-32 bg-black/50 border border-green-400/20 overflow-hidden">
-              <div className="absolute inset-0 opacity-60">
-                {/* Matrix columns */}
-                {Array.from({ length: 25 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="absolute top-0 text-green-400/40 text-xs font-mono"
-                    style={{
-                      left: `${i * 4}%`,
-                      animation: `matrixRain ${
-                        2 + Math.random() * 3
-                      }s linear infinite`,
-                      animationDelay: `${Math.random() * 2}s`,
-                      fontFamily: "'Courier New', Consolas, Monaco, monospace",
-                    }}
-                  >
-                    {Array.from({ length: 15 }).map((_, j) => (
-                      <div key={j} className="h-4">
-                        {Math.random() > 0.5
-                          ? String.fromCharCode(0x30a0 + Math.random() * 96)
-                          : Math.floor(Math.random() * 2)}
-                      </div>
-                    ))}
-                  </div>
-                ))}
-              </div>
-
-              {/* Real System Info Overlay */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div
-                  className="text-center font-mono"
-                  style={{
-                    fontFamily: "'Courier New', Consolas, Monaco, monospace",
-                  }}
-                >
-                  <div className="text-green-400 text-sm mb-2">
-                    OVERLOOK_SYSTEM_MONITOR
-                  </div>
-                  <div className="grid grid-cols-2 gap-2 text-xs text-green-400/80">
-                    <div>
-                      PLATFORM:{" "}
-                      {systemSpecs.platform.split(" ")[0] || "Unknown"}
-                    </div>
-                    <div>CORES: {systemSpecs.cpuCores || "N/A"}</div>
-                    <div>RAM: {systemSpecs.totalMemory || "N/A"}</div>
-                    <div>HEAP: {realTimeStats.usedMemory || 0}MB</div>
-                  </div>
-                  <div className="flex items-center justify-center gap-1 mt-2">
-                    <div className="w-1 h-1 bg-green-400 rounded-full animate-ping"></div>
-                    <div
-                      className="w-1 h-1 bg-green-400 rounded-full animate-ping"
-                      style={{ animationDelay: "0.5s" }}
-                    ></div>
-                    <div
-                      className="w-1 h-1 bg-green-400 rounded-full animate-ping"
-                      style={{ animationDelay: "1s" }}
-                    ></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div
-              className="mt-2 text-xs text-green-400/40 text-center font-mono"
-              style={{
-                fontFamily: "'Courier New', Consolas, Monaco, monospace",
-              }}
-            >
-              Real System Monitor • Platform: {systemSpecs.platform} • Active
-            </div>
-          </div>
         </div>
+        
+        {/* Terminal Toggle Button */}
+        <button
+          onClick={() => setShowGlobalTerminal(!showGlobalTerminal)}
+          className="fixed bottom-4 right-4 z-40 p-3 bg-green-400 text-black hover:bg-green-300 transition-all shadow-lg border border-green-400/50 rounded-none"
+          style={{ fontFamily: "'Courier New', Consolas, Monaco, monospace" }}
+          title="Toggle Terminal"
+        >
+          <Terminal className="w-5 h-5" />
+        </button>
+
+        {/* Global Terminal */}
+        <GlobalTerminal 
+          onOutput={(output) => setDashboardTerminalOutput(prev => [...prev, output])}
+          terminalOutput={dashboardTerminalOutput}
+          isVisible={showGlobalTerminal}
+          onVisibilityChange={setShowGlobalTerminal}
+        />
       </div>
     </div>
   );

@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useFileSystem } from "../contexts/useFileSystem";
+import { Plus, Folder, File } from "lucide-react";
 
 const FileIcon = ({ type, language }) => {
   if (type === "folder") {
     return (
       <svg
-        className="w-4 h-4 text-blue-400"
+        className="w-4 h-4 text-green-400"
         fill="currentColor"
         viewBox="0 0 20 20"
       >
@@ -17,28 +18,28 @@ const FileIcon = ({ type, language }) => {
   // File type icons based on language
   const iconClass = "w-4 h-4";
   const iconColor = {
-    javascript: "text-yellow-400",
-    typescript: "text-blue-400",
-    python: "text-green-400",
-    html: "text-orange-400",
-    css: "text-blue-300",
-    scss: "text-pink-400",
-    sass: "text-pink-400",
-    json: "text-yellow-300",
-    markdown: "text-gray-400",
-    java: "text-red-400",
-    cpp: "text-blue-500",
-    c: "text-blue-500",
-    csharp: "text-purple-400",
-    go: "text-cyan-400",
-    rust: "text-orange-600",
-    php: "text-purple-500",
-    ruby: "text-red-500",
-    sql: "text-blue-400",
-    xml: "text-orange-500",
-    yaml: "text-red-300",
-    shell: "text-green-300",
-    default: "text-gray-400",
+    javascript: "text-green-300",
+    typescript: "text-green-400",
+    python: "text-green-300",
+    html: "text-green-400",
+    css: "text-green-300",
+    scss: "text-green-400",
+    sass: "text-green-400",
+    json: "text-green-300",
+    markdown: "text-green-400/60",
+    java: "text-green-400",
+    cpp: "text-green-300",
+    c: "text-green-300",
+    csharp: "text-green-400",
+    go: "text-green-300",
+    rust: "text-green-400",
+    php: "text-green-300",
+    ruby: "text-green-400",
+    sql: "text-green-300",
+    xml: "text-green-400",
+    yaml: "text-green-300",
+    shell: "text-green-400",
+    default: "text-green-400/60",
   };
 
   const color = iconColor[language] || iconColor.default;
@@ -195,20 +196,23 @@ const TreeNode = ({ node, level = 0, parentId = null }) => {
   return (
     <div>
       <div
-        className={`flex items-center py-1 px-2 hover:bg-gray-700 cursor-pointer group ${
-          isActive ? "bg-blue-600" : ""
+        className={`flex items-center py-1 px-2 hover:bg-green-400/10 cursor-pointer group ${
+          isActive ? "bg-green-400/20 border-l-2 border-green-400" : ""
         } ${
           isSelected && node.type === "folder"
-            ? "bg-blue-900/30 border-l-2 border-blue-500"
+            ? "bg-green-400/10 border-l-2 border-green-400/50"
             : ""
         }`}
-        style={{ paddingLeft: `${level * 16 + 8}px` }}
+        style={{ 
+          paddingLeft: `${level * 16 + 8}px`,
+          fontFamily: "'Courier New', Consolas, Monaco, monospace"
+        }}
         onClick={handleToggle}
         onContextMenu={handleContextMenu}
       >
         {node.type === "folder" && (
           <svg
-            className={`w-3 h-3 mr-1 transition-transform ${
+            className={`w-3 h-3 mr-1 transition-transform text-green-400 ${
               isExpanded ? "rotate-90" : ""
             }`}
             fill="currentColor"
@@ -232,17 +236,18 @@ const TreeNode = ({ node, level = 0, parentId = null }) => {
             onChange={(e) => setNewName(e.target.value)}
             onBlur={isRenaming ? handleRenameSubmit : handleInlineCreate}
             onKeyDown={handleKeyDown}
-            className="ml-2 bg-gray-600 text-white px-1 py-0 text-sm border border-blue-500 rounded flex-1"
+            className="ml-2 bg-black text-green-400 px-1 py-0 text-xs border border-green-400/50 flex-1"
+            style={{ fontFamily: "'Courier New', Consolas, Monaco, monospace" }}
             placeholder={
               isCreatingFile
-                ? "Enter file name"
+                ? "> file_name"
                 : isCreatingFolder
-                ? "Enter folder name"
+                ? "> folder_name"
                 : ""
             }
           />
         ) : (
-          <span className="ml-2 text-sm text-gray-200 select-none">
+          <span className="ml-2 text-xs text-green-400/80 select-none">
             {node.name}
           </span>
         )}
@@ -329,13 +334,36 @@ const FileExplorer = () => {
   const [isCreatingFile, setIsCreatingFile] = useState(false);
   const [isCreatingFolder, setIsCreatingFolder] = useState(false);
   const [newName, setNewName] = useState("");
+  const [showContextMenu, setShowContextMenu] = useState(false);
+  const [contextMenuPos, setContextMenuPos] = useState({ x: 0, y: 0 });
   const inputRef = useRef(null);
+  const contextMenuRef = useRef(null);
 
   useEffect(() => {
     if ((isCreatingFile || isCreatingFolder) && inputRef.current) {
       inputRef.current.focus();
     }
   }, [isCreatingFile, isCreatingFolder]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        contextMenuRef.current &&
+        !contextMenuRef.current.contains(event.target)
+      ) {
+        setShowContextMenu(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleContextMenu = (e) => {
+    e.preventDefault();
+    setContextMenuPos({ x: e.clientX, y: e.clientY });
+    setShowContextMenu(true);
+  };
 
   const handleCreateFile = () => {
     setIsCreatingFile(true);
@@ -376,38 +404,34 @@ const FileExplorer = () => {
   };
 
   return (
-    <div className="h-full bg-gray-900 border-r border-gray-700 flex flex-col">
-      <div className="px-4 py-3 border-b border-gray-700">
+    <div className="h-full bg-black flex flex-col text-green-400" style={{ fontFamily: "'Courier New', Consolas, Monaco, monospace" }}>
+      {/* File Explorer Header with Controls */}
+      <div className="border-b border-green-400/30 p-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-medium text-gray-300">EXPLORER</h2>
+          <h2 className="text-xs font-bold text-green-400">FILE_SYSTEM</h2>
           <div className="flex gap-1">
             <button
               onClick={handleCreateFile}
-              className="p-1 hover:bg-gray-700 rounded text-gray-400 hover:text-gray-200 transition-colors"
+              className="p-1 hover:bg-green-400/20 border border-green-400/30 text-green-400 hover:text-green-300 transition-colors"
               title="New File"
             >
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path
-                  fillRule="evenodd"
-                  d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z"
-                  clipRule="evenodd"
-                />
-              </svg>
+              <File className="w-3 h-3" />
             </button>
             <button
               onClick={handleCreateFolder}
-              className="p-1 hover:bg-gray-700 rounded text-gray-400 hover:text-gray-200 transition-colors"
+              className="p-1 hover:bg-green-400/20 border border-green-400/30 text-green-400 hover:text-green-300 transition-colors"
               title="New Folder"
             >
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
-              </svg>
+              <Folder className="w-3 h-3" />
             </button>
           </div>
         </div>
       </div>
-
-      <div className="flex-1 overflow-y-auto">
+      
+      <div 
+        className="flex-1 overflow-y-auto p-2 relative"
+        onContextMenu={handleContextMenu}
+      >
         {Object.values(state.files).map((node) => (
           <TreeNode key={node.id} node={node} />
         ))}
@@ -426,11 +450,46 @@ const FileExplorer = () => {
               onChange={(e) => setNewName(e.target.value)}
               onBlur={handleInlineCreate}
               onKeyDown={handleKeyDown}
-              className="ml-2 bg-gray-600 text-white px-1 py-0 text-sm border border-blue-500 rounded flex-1"
+              className="ml-2 bg-black text-green-400 px-1 py-0 text-xs border border-green-400/50 flex-1"
+              style={{ fontFamily: "'Courier New', Consolas, Monaco, monospace" }}
               placeholder={
-                isCreatingFile ? "Enter file name" : "Enter folder name"
+                isCreatingFile ? "> new_file" : "> new_folder"
               }
             />
+          </div>
+        )}
+
+        {/* Context Menu */}
+        {showContextMenu && (
+          <div
+            ref={contextMenuRef}
+            className="fixed bg-black border border-green-400/50 shadow-lg z-50 py-1"
+            style={{
+              left: contextMenuPos.x,
+              top: contextMenuPos.y,
+              fontFamily: "'Courier New', Consolas, Monaco, monospace"
+            }}
+          >
+            <button
+              onClick={() => {
+                handleCreateFile();
+                setShowContextMenu(false);
+              }}
+              className="w-full px-3 py-1 text-left text-xs text-green-400 hover:bg-green-400/20 flex items-center gap-2"
+            >
+              <File className="w-3 h-3" />
+              New File
+            </button>
+            <button
+              onClick={() => {
+                handleCreateFolder();
+                setShowContextMenu(false);
+              }}
+              className="w-full px-3 py-1 text-left text-xs text-green-400 hover:bg-green-400/20 flex items-center gap-2"
+            >
+              <Folder className="w-3 h-3" />
+              New Folder
+            </button>
           </div>
         )}
       </div>

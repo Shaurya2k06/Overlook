@@ -59,36 +59,36 @@ const TabSystem = () => {
 
   if (state.openTabs.length === 0) {
     return (
-      <div className="bg-gray-800 border-b border-gray-700 px-4 py-2">
-        <div className="text-gray-400 text-sm">No files open</div>
+      <div className="bg-black border-b border-green-400/30 px-4 py-2" style={{ fontFamily: "'Courier New', Consolas, Monaco, monospace" }}>
+        <div className="text-green-400/60 text-sm">NO_FILES_OPEN</div>
       </div>
     );
   }
 
   return (
-    <div className="bg-gray-800 border-b border-gray-700">
+    <div className="bg-black border-b border-green-400/30" style={{ fontFamily: "'Courier New', Consolas, Monaco, monospace" }}>
       <div className="flex overflow-x-auto">
         {state.openTabs.map((tab) => (
           <div
             key={tab.id}
-            className={`flex items-center px-3 py-2 border-r border-gray-700 cursor-pointer group min-w-0 ${
+            className={`flex items-center px-3 py-2 border-r border-green-400/30 cursor-pointer group min-w-0 ${
               state.activeTab === tab.id
-                ? "bg-gray-900 text-white"
-                : "bg-gray-800 text-gray-300 hover:bg-gray-700"
+                ? "bg-green-400/10 text-green-400 border-b-2 border-green-400"
+                : "bg-black text-green-400/70 hover:bg-green-400/5"
             }`}
             onClick={() => handleTabClick(tab.id)}
           >
             <div className="flex items-center min-w-0 flex-1">
               {getFileIcon(tab.language)}
-              <span className="ml-2 text-sm truncate max-w-32">{tab.name}</span>
+              <span className="ml-2 text-xs truncate max-w-32">{tab.name}</span>
               {tab.hasUnsavedChanges && (
-                <div className="w-2 h-2 bg-orange-400 rounded-full ml-2 flex-shrink-0"></div>
+                <div className="w-2 h-2 bg-orange-400 rounded-full ml-2 flex-shrink-0 animate-pulse"></div>
               )}
             </div>
 
             <button
               onClick={(e) => handleTabClose(e, tab.id)}
-              className="ml-2 opacity-0 group-hover:opacity-100 hover:bg-gray-600 rounded p-1 transition-opacity"
+              className="ml-2 opacity-0 group-hover:opacity-100 hover:bg-green-400/20 rounded p-1 transition-opacity text-red-400"
               title="Close tab"
             >
               <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">

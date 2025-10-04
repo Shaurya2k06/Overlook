@@ -19,18 +19,30 @@ const app = express();
 const server = http.createServer(app);
 
 // Configure CORS for Socket.IO
+const allowedOrigins = [
+  "http://localhost:5173", // Development
+  "https://overlook-6yrs.onrender.com", // Production frontend
+  "http://localhost:3000" // Alternative dev port
+];
+
 const io = socketIo(server, {
   cors: {
-    origin: "http://localhost:5173", // Your React dev server URL
+    origin: allowedOrigins,
     methods: ["GET", "POST"],
+    credentials: true
   },
 });
 
 // Middleware
+const corsOptions = {
+  origin: allowedOrigins,
+  credentials: true
+};
+
 connectMongoDB(URL)
   .then(() => console.log("MongoDB Connected!!"))
   .catch((err) => console.log("Error, Can't connect to DB", err));
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Connect to MongoDB

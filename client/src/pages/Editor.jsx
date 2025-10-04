@@ -26,9 +26,14 @@ import ParticipantsList from "../components/ParticipantsList";
 import FileExplorer from "../components/FileExplorer";
 import TabSystem from "../components/TabSystem";
 import StatusBar from "../components/StatusBar";
+import RoomChat from "../components/RoomChat";
+import fetchData, { getSocketUrl } from "../../service/backendApi";
 
-const API_BASE_URL = "http://localhost:3001/api";
-const SOCKET_URL = "http://localhost:3001";
+// Dynamic API and Socket URLs
+const API_BASE_URL = import.meta.env.MODE === 'production' 
+  ? 'https://overlook-6yrs.onrender.com/api' 
+  : 'http://localhost:3001/api';
+const SOCKET_URL = getSocketUrl();
 
 function Editor() {
   const { roomId } = useParams();
@@ -186,12 +191,19 @@ function Editor() {
 
     newSocket.on("room-joined", (data) => {
       console.log("Joined room:", data);
-      setParticipants(data.users || []);
+      console.log("Participants received:", data.users);
+      console.log("Current user:", user);
+      
+      // Set participants from server data
+      const participantsList = data.users || [];
+      setParticipants(participantsList);
+      
       setIsJoining(false);
       setJoinError(null);
 
       // Show success notification in terminal
       addTerminalNotification(`Successfully joined room ${data.roomId}`, 'success');
+      addTerminalNotification(`Room has ${participantsList.length} participant(s)`, 'info');
 
       // Sync file system data if available
       if (data.files || data.folders) {
@@ -210,14 +222,23 @@ function Editor() {
 
     newSocket.on("user-joined", (data) => {
       console.log("User joined:", data);
-      setParticipants((prev) => [
-        ...prev,
-        {
-          userId: data.userId,
-          username: data.username,
-          name: data.name,
-        },
-      ]);
+      setParticipants((prev) => {
+        // Check if user already exists to prevent duplicates
+        const existingUser = prev.find(p => p.userId === data.userId);
+        if (existingUser) {
+          console.log("User already in participants list:", data.userId);
+          return prev;
+        }
+        
+        return [
+          ...prev,
+          {
+            userId: data.userId,
+            username: data.username,
+            name: data.name,
+          },
+        ];
+      });
 
       // Show user joined notification in terminal
       addTerminalNotification(`${data.username} joined the room`, 'info');
@@ -796,6 +817,14 @@ function Editor() {
           terminalOutput={terminalOutput}
           isVisible={isTerminalVisible}
           onVisibilityChange={setIsTerminalVisible}
+        />
+
+        {/* Room Chat */}
+        <RoomChat 
+          socket={socket}
+          user={user}
+          participants={participants}
+          roomId={roomId}
         />
       </div>
     </FileSystemProvider>

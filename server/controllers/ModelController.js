@@ -1,77 +1,124 @@
-//using const = require
-
-const { GoogleGenerativeAI } = require("@google/generative-ai");
-const dotenv = require("dotenv");
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import dotenv from "dotenv";
+import Rooms from "../model/Rooms.js";
 
 dotenv.config();
 const geminiApiKey = process.env.GEMINI_API_KEY;
 
-/* ----------------------  EXPRESS HANDLER  ---------------------- */
-async function geminiHandler(req, res) {
-  const { prompt, files } = req.body; // files: [{ name, code }]
-  try {
-    const refinedPrompt = await getRefinedPrompt(prompt);
 
-    // 2. Send refined prompt along with the files to Gemini again
+export async function geminiHandler(req, res) {
+  const { prompt, rid } = req.body;
+  try {
+    if (!prompt || !rid) {
+      return res.status(400).json({ success: false, error: "Prompt and Room ID are required" });
+    }
+
+    const room = await Rooms.findOne({ rid });
+    if (!room) {
+      return res.status(404).json({ success: false, error: "Room not found" });
+    }
+    const files = room.files || []; // [{ filename, code }]
+
+    // 2) refine using prompt + files context
+    const refinedPrompt = await getRefinedPrompt(prompt, files);
+
+    // 3) ask for codebase in your single-file multi-section format
     const output = await geminiPrompt(refinedPrompt, files);
 
-    res.json({
-      success: true,
-      refinedPrompt,
-      output,
-    });
+    return res.json({ success: true, refinedPrompt, output });
   } catch (err) {
     console.error("Gemini error:", err);
-    res.status(500).json({ success: false, error: err.message });
+    return res.status(500).json({ success: false, error: err.message });
   }
 }
 
-/* ----------------------  STEP 1: refine user prompt  ---------------------- */
-async function getRefinedPrompt(originalPrompt) {
+// refining the prompt to be clearer and more specific
+async function getRefinedPrompt(originalPrompt, files = []) {
   const genAI = new GoogleGenerativeAI(geminiApiKey);
   const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-  const helperInstruction = `You are a prompt-crafting assistant.
+  // Keep this request lightweight; include brief file previews
+  let helperInstruction =
+      `You are a prompt-crafting assistant.
 Rewrite the following user request so it is clear, concise, and well-structured for another AI code model.
-Keep the intent unchanged but make it as precise as possible.
+Keep the intent unchanged but improve clarity and specificity.
+Use the supplied project files as context to tailor the prompt, but DO NOT output file contents.
 
-USER PROMPT:
-${originalPrompt}`;
+USER REQUEST:
+${originalPrompt}
+
+--- PROJECT FILES CONTEXT START ---`;
+
+  if (files.length) {
+    for (const f of files) {
+      const preview = (f.code || "").slice(0, 1500);
+      helperInstruction += `
+
+### FILE: ${f.filename}
+${preview}
+`;
+    }
+  } else {
+    helperInstruction += `
+
+(no project files provided)
+`;
+  }
+
+  helperInstruction += `
+--- PROJECT FILES CONTEXT END ---`;
 
   const result = await model.generateContent(helperInstruction);
   return result.response?.text() || originalPrompt;
 }
 
-/* ----------------------  STEP 2: send refined prompt with files  ---------------------- */
-async function geminiPrompt(prompt, files = []) {
+// asking Gemini to produce the code in your single-file multi-section format
+async function geminiPrompt(refinedPrompt, files = []) {
   const genAI = new GoogleGenerativeAI(geminiApiKey);
   const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
-  let fullPrompt = `You are an expert code assistant.
-Follow the refined user request below, using the supplied project files.
+  // Clear, fence-free instructions for your single-file output format
+  let fullPrompt =
+      `You are a code generator. Output ONLY source files in a single message, split into sections.
 
-REFINED REQUEST:
-${prompt}
+FORMAT RULES:
+- For every file:
+  (a) Print the relative file path on its own line (e.g., src/App.jsx). No prefixes, no code fences.
+  (b) Then print the entire file content verbatim.
+      The FIRST line inside the content must be a language-appropriate comment that repeats the same path
+      (e.g., // src/App.jsx, /* src/styles.css */, <!-- src/index.html -->, # src/main.py).
+  (c) After the file content, print this delimiter EXACTLY on its own line:
+      **##$$%%(())--==++__
+- Do NOT include any markdown code fences.
+- Do NOT include explanations or extra lines outside file sections.
+- Use ASCII quotes (no smart quotes).
+
+REFINED USER REQUEST:
+${refinedPrompt}
+
+You may use the following project files as CONTEXT ONLY (do not echo them verbatim unless you are modifying or reusing parts).
+If you produce updated or new files, emit them as proper sections per the rules above.
 
 --- PROJECT FILES START ---`;
 
   if (files.length) {
     for (const f of files) {
       fullPrompt += `
-### FILE: ${f.name}
-${f.code}
+### FILE: ${f.filename}
+${f.code || ""}
 `;
     }
   } else {
-    fullPrompt += `\n(no project files provided)\n`;
+    fullPrompt += `
+
+(no project files provided)
+`;
   }
 
   fullPrompt += `
 --- PROJECT FILES END ---
-Provide your best possible answer based on the above.`;
+Now output ONLY the generated/updated files in the exact sectioned format described above.`;
 
   const result = await model.generateContent(fullPrompt);
   return result.response?.text() || "";
 }
-
-module.exports = { geminiHandler };

@@ -1,0 +1,45 @@
+const Rooms = require('../model/Rooms');
+
+async function createRoom(req, res) {
+    try {
+        const {rid} = req.body;
+        if (!rid) {
+            return res.status(400).json({message: "Room ID is required"});
+        }
+
+        const existingRoom = await Rooms.findOne({rid});
+        if (existingRoom) {
+            return res.status(400).json({message: "Room already exists"});
+        }
+
+        const newRoom = await Rooms.create({
+            rid,
+            userId: req.userId,
+        });
+        return res.status(201).json({message: "Room created successfully", roomId: newRoom.rid});
+    } catch (err) {
+        console.log("error in create room");
+        console.log(err);
+        return res.status(500).json({message: "Server error"});
+    }
+}
+
+async function addFilesToRoom(rid, files) {
+    try {
+        const room = await Rooms.findOne({rid});
+        if (!room) {
+            return res.status(404).json({message: "Room not found"});
+        }
+        room.files.push(...files);
+        await room.save();
+        return room;
+    } catch (err) {
+        console.error("Error adding files to room:", err);
+        return res.status(500).json({message: "Server error"});
+    }
+}
+
+module.exports = {
+    createRoom,
+    addFilesToRoom
+};

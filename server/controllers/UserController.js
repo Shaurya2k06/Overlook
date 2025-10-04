@@ -49,11 +49,13 @@ async function signup(req, res) {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
+
     const newUser = await User.create({
       name,
       email,
-      hashedPassword,
+      password: hashedPassword,
     });
+
 
     return res.status(201).json({message: "User signup successful", userId: newUser._id});
 

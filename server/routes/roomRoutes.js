@@ -1,6 +1,6 @@
 const express = require("express");
 const RoomController = require("../controllers/RoomController");
-const ModelController = require("../controllers/ModelController");
+const { geminiHandler } = require("../controllers/ModelController");
 
 const router = express.Router();
 
@@ -10,6 +10,6 @@ router.get("/:roomId", RoomController.getRoom);
 router.post("/leave/:roomId", RoomController.leaveRoom);
 router.get("/", RoomController.getAllRooms);
 
-router.post("/generate-code", ModelController.generateCode);
+router.post("/generate-code", geminiHandler);
 
 module.exports = router;

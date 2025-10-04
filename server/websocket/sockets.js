@@ -135,6 +135,16 @@ function setupSocketHandlers(io) {
           console.log(
             `${user.name} reconnecting to room ${roomId} (old socket: ${existingUser.socketId}, new socket: ${socket.id})`
           );
+
+          // Check if the old socket is still connected and disconnect it
+          const oldSocket = io.sockets.sockets.get(existingUser.socketId);
+          if (oldSocket && oldSocket.connected) {
+            console.log(
+              `Disconnecting old socket ${existingUser.socketId} for user ${user.name}`
+            );
+            oldSocket.disconnect(true);
+          }
+
           existingUser.socketId = socket.id;
           room.users.set(userId, existingUser);
         } else {
@@ -203,6 +213,19 @@ function setupSocketHandlers(io) {
         } else {
           // For reconnections, just send a reconnection notification
           console.log(`${user.name} reconnected to room ${roomId}`);
+          // Also notify other users that this user reconnected (optional)
+          broadcastToRoom(
+            io,
+            roomId,
+            "user-reconnected",
+            {
+              userId,
+              username: user.name,
+              name: user.name,
+              userCount: room.users.size,
+            },
+            userId
+          );
         }
       } catch (error) {
         console.error("Error joining room:", error);
@@ -507,6 +530,11 @@ function setupSocketHandlers(io) {
             fileData.language = language;
           }
           room.files.set(fileId, fileData);
+        } else {
+          console.log(
+            `File ${fileId} not found in room ${socket.roomId} files:`,
+            Array.from(room?.files.keys() || [])
+          );
         }
 
         // Broadcast to all users in the room (including sender for sync)
@@ -517,8 +545,19 @@ function setupSocketHandlers(io) {
           updatedBy: user.username,
           updatedByUserId: user.userId,
         };
-        console.log("Broadcasting file-content-updated event:", broadcastData);
+        console.log(
+          "Broadcasting file-content-updated event to room:",
+          socket.roomId,
+          "with data:",
+          broadcastData
+        );
+        console.log("Room users:", Array.from(room?.users.keys() || []));
         io.to(socket.roomId).emit("file-content-updated", broadcastData);
+      } else {
+        console.log(
+          "Cannot broadcast file update - missing roomId or userId:",
+          { roomId: socket.roomId, userId: user.userId }
+        );
       }
     });
 

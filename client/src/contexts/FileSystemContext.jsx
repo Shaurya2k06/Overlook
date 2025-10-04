@@ -676,21 +676,23 @@ export const FileSystemProvider = ({
 
     const handleFileContentUpdated = (data) => {
       console.log("File content updated event received:", data);
-      // Only update if the content change is from another user
-      if (data.updatedByUserId !== user?.id) {
-        console.log(
-          "Syncing content update from another user for file:",
-          data.fileId
-        );
-        dispatch({
-          type: ActionTypes.SYNC_FILE_CONTENT_UPDATED,
-          payload: {
-            fileId: data.fileId,
-            content: data.content,
-            language: data.language,
-          },
-        });
-      }
+      console.log(
+        "Current user ID:",
+        user?.id,
+        "Updated by user ID:",
+        data.updatedByUserId
+      );
+
+      // Always sync the content update to ensure consistency across all users
+      console.log("Syncing content update for file:", data.fileId);
+      dispatch({
+        type: ActionTypes.SYNC_FILE_CONTENT_UPDATED,
+        payload: {
+          fileId: data.fileId,
+          content: data.content,
+          language: data.language,
+        },
+      });
     };
 
     socket.on("file-created", handleFileCreated);

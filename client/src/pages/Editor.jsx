@@ -142,6 +142,39 @@ function Editor() {
       });
     });
 
+    newSocket.on("user-reconnected", (data) => {
+      console.log("User reconnected:", data);
+      // Update participants list to reflect reconnection
+      setParticipants((prev) => {
+        const existingIndex = prev.findIndex((p) => p.userId === data.userId);
+        if (existingIndex >= 0) {
+          // Update existing participant
+          const updated = [...prev];
+          updated[existingIndex] = {
+            userId: data.userId,
+            username: data.username,
+            name: data.name,
+          };
+          return updated;
+        } else {
+          // Add participant if not found (shouldn't happen but just in case)
+          return [
+            ...prev,
+            {
+              userId: data.userId,
+              username: data.username,
+              name: data.name,
+            },
+          ];
+        }
+      });
+
+      // Show user reconnected toast
+      toast.info(`${data.username} reconnected to the room`, {
+        position: "bottom-right",
+      });
+    });
+
     newSocket.on("error", (error) => {
       console.error("Socket error:", error);
       setJoinError(error.message);

@@ -7,7 +7,7 @@ const BusinessSignup = memo(({ isOpen, onClose, onSwitchToLogin }) => {
     companyName: "",
     email: "",
     password: "",
-    confirmPassword: ""
+    confirmPassword: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
@@ -33,9 +33,9 @@ const BusinessSignup = memo(({ isOpen, onClose, onSwitchToLogin }) => {
   }, []);
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
@@ -46,28 +46,30 @@ const BusinessSignup = memo(({ isOpen, onClose, onSwitchToLogin }) => {
     try {
       // Simulate signup
       setTimeout(() => {
-        navigate('/dashboard');
+        navigate("/dashboard");
         onClose();
         setIsSubmitting(false);
       }, 1000);
     } catch (error) {
-      console.error('Signup error:', error);
+      console.error("Signup error:", error);
       setIsSubmitting(false);
     }
   };
 
   const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && isFormComplete()) {
+    if (e.key === "Enter" && isFormComplete()) {
       handleSubmit(e);
     }
   };
 
   const isFormComplete = () => {
-    return formData.companyName.trim() !== "" && 
-           formData.email.trim() !== "" && 
-           formData.password.trim() !== "" && 
-           formData.confirmPassword.trim() !== "" &&
-           formData.password === formData.confirmPassword;
+    return (
+      formData.companyName.trim() !== "" &&
+      formData.email.trim() !== "" &&
+      formData.password.trim() !== "" &&
+      formData.confirmPassword.trim() !== "" &&
+      formData.password === formData.confirmPassword
+    );
   };
 
   if (!isOpen) return null;
@@ -92,16 +94,15 @@ const BusinessSignup = memo(({ isOpen, onClose, onSwitchToLogin }) => {
               className="text-4xl text-white mb-2"
               style={{ fontFamily: "Advercase, monospace" }}
             >
-              <TextAnimate
-                animation="slideUp"
-                by="word"
-                key="signup-title"
-              >
+              <TextAnimate animation="slideUp" by="word" key="signup-title">
                 Join Overlook
               </TextAnimate>
             </div>
-            <p className="text-gray-400 text-sm mt-4" style={{ fontFamily: "Advercase, monospace" }}>
-              Create your business account
+            <p
+              className="text-gray-400 text-sm mt-4"
+              style={{ fontFamily: "Advercase, monospace" }}
+            >
+              Create your OverLook account
             </p>
           </div>
 
@@ -112,8 +113,10 @@ const BusinessSignup = memo(({ isOpen, onClose, onSwitchToLogin }) => {
               <input
                 type="text"
                 value={formData.companyName}
-                onChange={(e) => handleInputChange('companyName', e.target.value)}
-                placeholder="Company Name"
+                onChange={(e) =>
+                  handleInputChange("companyName", e.target.value)
+                }
+                placeholder="Name"
                 className="w-full px-6 py-4 bg-transparent border-b-2 border-white text-white text-xl text-center placeholder-gray-400 focus:outline-none focus:border-gray-300 transition-colors"
                 style={{ fontFamily: "Advercase, monospace" }}
                 onKeyPress={handleKeyPress}
@@ -126,8 +129,8 @@ const BusinessSignup = memo(({ isOpen, onClose, onSwitchToLogin }) => {
               <input
                 type="email"
                 value={formData.email}
-                onChange={(e) => handleInputChange('email', e.target.value)}
-                placeholder="Business Email"
+                onChange={(e) => handleInputChange("email", e.target.value)}
+                placeholder="Email"
                 className="w-full px-6 py-4 bg-transparent border-b-2 border-white text-white text-xl text-center placeholder-gray-400 focus:outline-none focus:border-gray-300 transition-colors"
                 style={{ fontFamily: "Advercase, monospace" }}
                 onKeyPress={handleKeyPress}
@@ -140,7 +143,7 @@ const BusinessSignup = memo(({ isOpen, onClose, onSwitchToLogin }) => {
               <input
                 type="password"
                 value={formData.password}
-                onChange={(e) => handleInputChange('password', e.target.value)}
+                onChange={(e) => handleInputChange("password", e.target.value)}
                 placeholder="Password"
                 className="w-full px-6 py-4 bg-transparent border-b-2 border-white text-white text-xl text-center placeholder-gray-400 focus:outline-none focus:border-gray-300 transition-colors"
                 style={{ fontFamily: "Advercase, monospace" }}
@@ -154,7 +157,9 @@ const BusinessSignup = memo(({ isOpen, onClose, onSwitchToLogin }) => {
               <input
                 type="password"
                 value={formData.confirmPassword}
-                onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                onChange={(e) =>
+                  handleInputChange("confirmPassword", e.target.value)
+                }
                 placeholder="Confirm Password"
                 className="w-full px-6 py-4 bg-transparent border-b-2 border-white text-white text-xl text-center placeholder-gray-400 focus:outline-none focus:border-gray-300 transition-colors"
                 style={{ fontFamily: "Advercase, monospace" }}
@@ -169,18 +174,21 @@ const BusinessSignup = memo(({ isOpen, onClose, onSwitchToLogin }) => {
               disabled={!isFormComplete() || isSubmitting}
               className={`w-full px-8 py-4 text-lg uppercase tracking-wider transition-colors ${
                 isFormComplete() && !isSubmitting
-                  ? 'bg-white text-black hover:bg-gray-200'
-                  : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                  ? "bg-white text-black hover:bg-gray-200"
+                  : "bg-gray-600 text-gray-400 cursor-not-allowed"
               }`}
               style={{ fontFamily: "Advercase, monospace" }}
             >
-              {isSubmitting ? 'Creating Account...' : 'Create Account'}
+              {isSubmitting ? "Creating Account..." : "Create Account"}
             </button>
           </form>
 
           {/* Switch to Login */}
           <div className="text-center">
-            <p className="text-gray-400 text-sm mb-4" style={{ fontFamily: "Advercase, monospace" }}>
+            <p
+              className="text-gray-400 text-sm mb-4"
+              style={{ fontFamily: "Advercase, monospace" }}
+            >
               Already have an account?
             </p>
             <button
@@ -197,6 +205,6 @@ const BusinessSignup = memo(({ isOpen, onClose, onSwitchToLogin }) => {
   );
 });
 
-BusinessSignup.displayName = 'BusinessSignup';
+BusinessSignup.displayName = "BusinessSignup";
 
 export default BusinessSignup;

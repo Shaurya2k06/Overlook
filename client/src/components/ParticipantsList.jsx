@@ -1,10 +1,68 @@
 import { useState } from "react";
+import { Users, Terminal } from "lucide-react";
 
-const ParticipantsList = ({ participants }) => {
+const ParticipantsList = ({ participants, terminalStyle = false }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
   if (participants.length === 0) {
     return null;
+  }
+
+  if (terminalStyle) {
+    return (
+      <div className="relative">
+        <button
+          className="flex items-center gap-2 bg-transparent border border-green-400/30 text-green-400/80 cursor-pointer px-2 py-1 transition-all hover:bg-green-400/10 text-xs"
+          onClick={() => setIsExpanded(!isExpanded)}
+          aria-expanded={isExpanded}
+          style={{ fontFamily: "'Courier New', Consolas, Monaco, monospace" }}
+        >
+          <Users className="w-3 h-3" />
+          <span>
+            [{participants.length}]_USERS
+          </span>
+          <span
+            className={`text-xs transition-transform ${
+              isExpanded ? "rotate-180" : ""
+            }`}
+          >
+            ▼
+          </span>
+        </button>
+
+        {isExpanded && (
+          <div className="absolute top-full right-0 mt-2 bg-black border border-green-400/30 shadow-2xl z-50 min-w-[280px]" style={{ fontFamily: "'Courier New', Consolas, Monaco, monospace" }}>
+            <div className="px-4 py-3 border-b border-green-400/30 bg-green-400/5">
+              <div className="flex items-center gap-2">
+                <Terminal className="w-3 h-3 text-green-400" />
+                <span className="text-green-400 text-xs font-bold">ACTIVE_PARTICIPANTS</span>
+              </div>
+            </div>
+            <div className="p-2">
+              {participants.map((participant, index) => (
+                <div
+                  key={participant.userId || index}
+                  className="flex items-center gap-3 px-3 py-2 transition-colors hover:bg-green-400/10"
+                >
+                  <div className="w-6 h-6 border border-green-400/50 bg-green-400/10 flex items-center justify-center text-green-400 font-bold text-xs">
+                    {participant.username?.charAt(0)?.toUpperCase() || "U"}
+                  </div>
+                  <div className="flex-1">
+                    <div className="text-green-400 text-xs font-mono">
+                      {participant.username || participant.name || "UNKNOWN_USER"}
+                    </div>
+                    <div className="text-green-400/50 text-xs">
+                      ID: {participant.userId?.slice(0, 8)}...
+                    </div>
+                  </div>
+                  <div className="text-green-400 text-xs animate-pulse">●</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
   }
 
   return (

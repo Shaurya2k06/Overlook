@@ -1,5 +1,6 @@
-const dotenv = require("dotenv");
-const axios = require("axios");
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import dotenv from "dotenv";
+import Rooms from "../model/Rooms.js";
 
 dotenv.config();
 const githubToken = process.env.GITHUB_MODELS_TOKEN;

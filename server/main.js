@@ -53,13 +53,16 @@ app.get("/", (req, res) => {
   });
 });
 
-app.use("/public", UserRouter);
-app.use("/rooms", RoomsRouter);
+
+app.use('/public', UserRouter);
+app.use('/rooms', RoomsRouter);
+
 
 app.get("/api/rooms", (req, res) => {
   const rooms = getRoomStats();
   res.json({ rooms });
 });
+
 
 const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {

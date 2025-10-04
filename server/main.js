@@ -10,9 +10,10 @@ const { connectMongoDB } = require("./db/connection");
 const { setupSocketHandlers, getRoomStats } = require("./websocket/sockets");
 const { authenticateSocket } = require("./middleware/auth");
 const roomRoutes = require("./routes/roomRoutes");
-const UserRouter = require("./routes/UserRouter");
 const RoomsRouter = require("./routes/RoomsRouter");
-const redTeamRoutes = require("./routes/redteam");
+const UserRouter = require("./routes/UserRouter");
+const hybridRoomRoutes = require("./routes/hybridRoomRoutes");
+
 const { connect } = require("http2");
 
 // Create Express app and HTTP server
@@ -31,7 +32,16 @@ const io = socketIo(server, {
 connectMongoDB(URL)
   .then(() => console.log("MongoDB Connected!!"))
   .catch((err) => console.log("Error, Can't connect to DB", err));
-app.use(cors());
+
+// Configure CORS properly for credentials
+app.use(
+  cors({
+    origin: ["http://localhost:5173", "http://localhost:5174"], // Allow both common dev ports
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
+);
 app.use(express.json());
 
 // Connect to MongoDB
@@ -44,7 +54,8 @@ setupSocketHandlers(io);
 
 // API routes
 app.use("/api/rooms", roomRoutes);
-app.use("/api/redteam", redTeamRoutes);
+app.use("/api/Rooms", RoomsRouter); // Add the RoomsRouter for room creation
+app.use("/api/hybrid-rooms", hybridRoomRoutes); // Add hybrid room routes
 
 // Basic API routes
 app.get("/", (req, res) => {
@@ -56,7 +67,8 @@ app.get("/", (req, res) => {
 });
 
 app.use("/public", UserRouter);
-app.use("/rooms", RoomsRouter);
+app.use("/rooms", roomRoutes);
+app.use("/Room", RoomsRouter);
 
 app.get("/api/rooms", (req, res) => {
   const rooms = getRoomStats();

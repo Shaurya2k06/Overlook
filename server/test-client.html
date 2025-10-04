@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebSocket Test Client</title>
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+      }
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+      }
+      .section {
+        margin: 20px 0;
+        padding: 15px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+      }
+      input,
+      button,
+      textarea {
+        margin: 5px;
+        padding: 8px;
+      }
+      button {
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 3px;
+        cursor: pointer;
+      }
+      button:hover {
+        background: #0056b3;
+      }
+      .messages {
+        height: 200px;
+        overflow-y: auto;
+        border: 1px solid #ccc;
+        padding: 10px;
+        background: #f9f9f9;
+      }
+      .message {
+        margin: 5px 0;
+        padding: 5px;
+        background: white;
+        border-radius: 3px;
+      }
+      .code-editor {
+        width: 100%;
+        height: 150px;
+        font-family: monospace;
+      }
+      .status {
+        padding: 10px;
+        background: #e9ecef;
+        border-radius: 3px;
+        margin: 10px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>WebSocket Test Client</h1>
+
+      <div class="section">
+        <h3>Connection</h3>
+        <div class="status" id="status">Disconnected</div>
+        <input
+          type="text"
+          id="username"
+          placeholder="Username"
+          value="TestUser"
+        />
+        <input
+          type="text"
+          id="roomId"
+          placeholder="Room ID"
+          value="test-room"
+        />
+        <button onclick="connect()">Connect</button>
+        <button onclick="disconnect()">Disconnect</button>
+      </div>
+
+      <div class="section">
+        <h3>Code Editor</h3>
+        <textarea
+          id="codeEditor"
+          class="code-editor"
+          placeholder="Type your code here..."
+        >
+console.log('Hello World!');</textarea
+        >
+        <br />
+        <select id="language">
+          <option value="javascript">JavaScript</option>
+          <option value="python">Python</option>
+          <option value="java">Java</option>
+          <option value="cpp">C++</option>
+        </select>
+        <button onclick="sendCode()">Send Code</button>
+      </div>
+
+      <div class="section">
+        <h3>Chat</h3>
+        <div id="messages" class="messages"></div>
+        <input
+          type="text"
+          id="messageInput"
+          placeholder="Type a message..."
+          style="width: 70%"
+        />
+        <button onclick="sendMessage()">Send</button>
+        <button onclick="simulateAI()">Simulate AI Response</button>
+      </div>
+
+      <div class="section">
+        <h3>Room Info</h3>
+        <div id="roomInfo">Not connected to any room</div>
+      </div>
+    </div>
+
+    <script>
+      let socket = null;
+      let currentRoom = null;
+
+      function connect() {
+        const username = document.getElementById("username").value;
+        const roomId = document.getElementById("roomId").value;
+
+        if (!username || !roomId) {
+          alert("Please enter username and room ID");
+          return;
+        }
+
+        // Connect to Socket.IO server
+        socket = io("http://localhost:3001");
+        currentRoom = roomId;
+
+        // Connection events
+        socket.on("connect", () => {
+          updateStatus("Connected");
+          addMessage("System", "Connected to server", "system");
+
+          // Join room
+          socket.emit("join-room", { roomId, username });
+        });
+
+        socket.on("disconnect", () => {
+          updateStatus("Disconnected");
+          addMessage("System", "Disconnected from server", "system");
+        });
+
+        // Room events
+        socket.on("room-joined", (data) => {
+          updateStatus(`Connected to room: ${data.roomId}`);
+          updateRoomInfo(
+            `Room: ${data.roomId} | Users: ${data.userCount} | Language: ${data.language}`
+          );
+
+          // Load existing code and messages
+          document.getElementById("codeEditor").value = data.code;
+          document.getElementById("language").value = data.language;
+
+          // Load existing messages
+          data.messages.forEach((msg) => {
+            addMessage(msg.username, msg.message, msg.type);
+          });
+
+          addMessage("System", `Joined room ${data.roomId}`, "system");
+        });
+
+        socket.on("room-full", (data) => {
+          alert(data.message);
+          addMessage("System", data.message, "error");
+        });
+
+        socket.on("user-joined", (data) => {
+          addMessage(
+            "System",
+            `${data.username} joined the room (${data.userCount} users)`,
+            "system"
+          );
+          updateRoomInfo(`Room: ${currentRoom} | Users: ${data.userCount}`);
+        });
+
+        socket.on("user-left", (data) => {
+          addMessage(
+            "System",
+            `${data.username} left the room (${data.userCount} users)`,
+            "system"
+          );
+          updateRoomInfo(`Room: ${currentRoom} | Users: ${data.userCount}`);
+        });
+
+        // Code events
+        socket.on("code-updated", (data) => {
+          document.getElementById("codeEditor").value = data.code;
+          document.getElementById("language").value = data.language;
+          addMessage("System", `Code updated by ${data.updatedBy}`, "system");
+        });
+
+        // Chat events
+        socket.on("new-message", (data) => {
+          addMessage(data.username, data.message, data.type);
+        });
+      }
+
+      function disconnect() {
+        if (socket) {
+          socket.disconnect();
+          socket = null;
+          currentRoom = null;
+          updateStatus("Disconnected");
+          updateRoomInfo("Not connected to any room");
+        }
+      }
+
+      function sendCode() {
+        if (!socket) {
+          alert("Not connected");
+          return;
+        }
+
+        const code = document.getElementById("codeEditor").value;
+        const language = document.getElementById("language").value;
+
+        socket.emit("code-change", { code, language });
+        addMessage("You", "Code updated", "user");
+      }
+
+      function sendMessage() {
+        if (!socket) {
+          alert("Not connected");
+          return;
+        }
+
+        const message = document.getElementById("messageInput").value;
+        if (!message.trim()) return;
+
+        socket.emit("chat-message", { message, type: "user" });
+        document.getElementById("messageInput").value = "";
+      }
+
+      function simulateAI() {
+        if (!socket) {
+          alert("Not connected");
+          return;
+        }
+
+        const code = `// AI Generated Code
+function fibonacci(n) {
+    if (n <= 1) return n;
+    return fibonacci(n - 1) + fibonacci(n - 2);
+}
+
+console.log(fibonacci(10));`;
+
+        socket.emit("ai-code-response", {
+          code: code,
+          language: "javascript",
+          explanation: "Here's a Fibonacci function generated by AI!",
+        });
+      }
+
+      function updateStatus(status) {
+        document.getElementById("status").textContent = status;
+      }
+
+      function updateRoomInfo(info) {
+        document.getElementById("roomInfo").textContent = info;
+      }
+
+      function addMessage(username, message, type) {
+        const messagesDiv = document.getElementById("messages");
+        const messageDiv = document.createElement("div");
+        messageDiv.className = "message";
+
+        const timestamp = new Date().toLocaleTimeString();
+        messageDiv.innerHTML = `<strong>${username}:</strong> ${message} <small>(${timestamp})</small>`;
+
+        if (type === "ai") {
+          messageDiv.style.background = "#e3f2fd";
+        } else if (type === "system") {
+          messageDiv.style.background = "#f3e5f5";
+        } else if (type === "error") {
+          messageDiv.style.background = "#ffebee";
+        }
+
+        messagesDiv.appendChild(messageDiv);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+      }
+
+      // Allow Enter key to send messages
+      document
+        .getElementById("messageInput")
+        .addEventListener("keypress", (e) => {
+          if (e.key === "Enter") {
+            sendMessage();
+          }
+        });
+    </script>
+  </body>
+</html>

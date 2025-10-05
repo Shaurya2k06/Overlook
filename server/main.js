@@ -130,11 +130,38 @@ app.get("/api/rooms", (req, res) => {
   res.json({ rooms });
 });
 
-const PORT = process.env.PORT || 3003;
+const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`WebSocket server ready for connections`);
   console.log(`Authentication enabled for WebSocket connections`);
+});
+
+// Warn if critical env vars are missing
+if (!process.env.JWT_SECRET) {
+  console.warn(
+    "WARNING: JWT_SECRET is not set. Authentication and token generation will fail. Check your .env file."
+  );
+}
+
+// 404 handler for unmatched routes
+app.use((req, res, next) => {
+  res.status(404).json({ error: "Not Found", path: req.originalUrl });
+});
+
+// Global error handler - logs and returns JSON helpful in development
+app.use((err, req, res, next) => {
+  console.error(
+    "Unhandled error in express:",
+    err && err.stack ? err.stack : err
+  );
+  res.status(err && err.status ? err.status : 500).json({
+    error:
+      process.env.NODE_ENV === "production"
+        ? "Internal Server Error"
+        : (err && err.message) || "Internal Server Error",
+    stack: process.env.NODE_ENV === "production" ? undefined : err && err.stack,
+  });
 });
 
 // Security testing routes

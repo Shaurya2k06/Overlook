@@ -1,6 +1,7 @@
 import React, { useState, useEffect, memo } from "react";
 import { TextAnimate } from "./ui/text-animate";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
 
 const BusinessSignup = memo(({ isOpen, onClose, onSwitchToLogin }) => {
   const [formData, setFormData] = useState({
@@ -12,6 +13,7 @@ const BusinessSignup = memo(({ isOpen, onClose, onSwitchToLogin }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const navigate = useNavigate();
+  const { signup } = useAuth();
 
   // Load Advercase font
   useEffect(() => {
@@ -54,52 +56,18 @@ const BusinessSignup = memo(({ isOpen, onClose, onSwitchToLogin }) => {
     }
 
     try {
-      // 1) Signup
-      const signupResp = await fetch("http://localhost:3001/public/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: formData.companyName, // backend expects 'name'
-          email: formData.email,
-          password: formData.password,
-        }),
-      });
+      const result = await signup(
+        formData.email,
+        formData.password,
+        formData.companyName
+      );
 
-      const signupData = await signupResp.json();
-      if (!signupResp.ok) {
-        setErrorMsg(signupData?.message || "Signup failed. Please try again.");
-        setIsSubmitting(false);
-        return;
+      if (result.success) {
+        navigate("/dashboard");
+        onClose();
+      } else {
+        setErrorMsg(result.error || "Signup failed. Please try again.");
       }
-
-      // 2) Auto-login
-      const loginResp = await fetch("http://localhost:3001/public/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-        }),
-      });
-
-      const loginData = await loginResp.json();
-      if (!loginResp.ok) {
-        setErrorMsg(loginData?.message || "Signup success, but login failed. Please sign in.");
-        setIsSubmitting(false);
-        return;
-      }
-
-      // Expecting { message, token, userId }
-      if (loginData?.token) {
-        localStorage.setItem("token", loginData.token);
-        localStorage.setItem("auth_user_id", loginData.userId);
-        localStorage.setItem("isLoggedIn", "true"); // string
-        localStorage.setItem("auth_email", formData.email);
-      }
-
-      // 3) Navigate
-      navigate("/dashboard");
-      if (typeof onClose === "function") onClose();
     } catch (error) {
       console.error("Signup error:", error);
       setErrorMsg("Network error. Please check your connection and try again.");

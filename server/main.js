@@ -144,6 +144,13 @@ if (!process.env.JWT_SECRET) {
   );
 }
 
+//route to keep server alive
+app.get("/api/keep-alive", (req, res) => {
+  return res
+    .status(200)
+    .json({ status: "alive", timestamp: new Date().toISOString() });
+});
+
 // 404 handler for unmatched routes
 app.use((req, res, next) => {
   res.status(404).json({ error: "Not Found", path: req.originalUrl });

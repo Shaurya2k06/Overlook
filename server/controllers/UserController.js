@@ -1,9 +1,11 @@
 const User = require("../model/User");
 const dotenv = require("dotenv");
+// Load environment variables as early as possible so process.env values are available
+dotenv.config();
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
+// Read the JWT secret after dotenv has loaded environment variables
 const jwtSecret = process.env.JWT_SECRET;
-dotenv.config();
 
 
 
@@ -30,9 +32,9 @@ async function login(req, res) {
     );
     return res.status(200).json({message: "Login successful", token, userId: user._id});
   } catch (err) {
-    console.log("error in login users");
-    console.log(err);
-    return res.status(500).json({message: "Server error"});
+    console.error("error in login users:", err && err.stack ? err.stack : err);
+    // Return helpful error in development, generic in production
+    return res.status(500).json({message: process.env.NODE_ENV === 'production' ? "Server error" : (err && err.message) || "Server error"});
   }
 }
 
@@ -69,7 +71,8 @@ async function signup(req, res) {
 
 async function getProfile(req, res) {
   try {
-    const userId = req.user.userId;
+    // authenticateToken middleware sets req.userId
+    const userId = req.userId || (req.user && req.user.userId);
     if (!userId) {
       return res.status(400).json({error: "Missing userId"});
     }

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
 import fetchData from "../../service/backendApi";
 import {
   Terminal,
@@ -24,6 +25,7 @@ const API_BASE_URL = "https://overlook-6yrs.onrender.com/api";
 
 function Dashboard() {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [isVisible, setIsVisible] = useState(false);
   const [roomId, setRoomId] = useState("");
   const [isCreating, setIsCreating] = useState(false);
@@ -100,30 +102,6 @@ function Dashboard() {
       return updated;
     });
   }, []);
-
-  // Get user data from localStorage
-  const [user] = useState(() => {
-    const savedUser = localStorage.getItem("auth_email");
-    if (savedUser) {
-      try {
-        const userId = localStorage.getItem("auth_user_id");
-        return {
-          id:
-             userId ||
-            `user_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
-          username: savedUser || "guest",
-        };
-      } catch (error) {
-        console.error("Error parsing saved user data:", error);
-      }
-    }
-    console.log(savedUser)
-    // Fallback to default user
-    return {
-      id: `user_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
-      username: "guest",
-    };
-  });
 
   // Create a new room and navigate to it
   const createRoom = useCallback(async () => {
@@ -266,14 +244,23 @@ function Dashboard() {
           </div>
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2 text-xs">
+              <User className="w-3 h-3 text-green-400" />
+              <span className="text-green-400/80">
+                USER: {user?.username || "GUEST"}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-xs">
               <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
               <span className="text-green-400/80">SECURE_CONNECTION</span>
             </div>
             <button
-              onClick={() => navigate("/")}
-              className="px-3 py-1 border border-green-400/30 hover:bg-green-400/10 text-green-400 text-xs transition-all"
+              onClick={() => {
+                logout();
+                navigate("/");
+              }}
+              className="px-3 py-1 border border-red-400/30 hover:bg-red-400/10 text-red-400 text-xs transition-all"
             >
-              [EXIT]
+              [LOGOUT]
             </button>
           </div>
         </div>

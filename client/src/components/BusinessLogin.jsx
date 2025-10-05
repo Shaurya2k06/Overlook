@@ -1,6 +1,7 @@
 import React, { useState, useEffect, memo } from "react";
 import { TextAnimate } from "./ui/text-animate";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
 
 const BusinessLogin = memo(({ isOpen, onClose, onSwitchToSignup }) => {
   const [formData, setFormData] = useState({
@@ -10,6 +11,7 @@ const BusinessLogin = memo(({ isOpen, onClose, onSwitchToSignup }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const navigate = useNavigate();
+  const { login } = useAuth();
 
   // Load Advercase font
   useEffect(() => {
@@ -45,38 +47,14 @@ const BusinessLogin = memo(({ isOpen, onClose, onSwitchToSignup }) => {
     setErrorMsg("");
 
     try {
-      const resp = await fetch("http://localhost:3001/public/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-        }),
-      });
+      const result = await login(formData.email, formData.password);
 
-      const data = await resp.json();
-
-      if (!resp.ok) {
-        // Backend sends { message: "..."} on errors
-        setErrorMsg(data?.message || "Login failed. Please try again.");
-        setIsSubmitting(false);
-        return;
+      if (result.success) {
+        navigate("/dashboard");
+        onClose();
+      } else {
+        setErrorMsg(result.error || "Login failed. Please try again.");
       }
-
-      // Expecting { message, token, userId }
-      if (data?.token) {
-        localStorage.setItem("]token", data.token);
-        localStorage.setItem("auth_user_id", data.userId);
-        // Optional convenience flags (string values):
-        localStorage.setItem("isLoggedIn", "true");
-        localStorage.setItem("auth_email", formData.email);
-      }
-
-      // Navigate to dashboard and close modal
-      navigate("/dashboard");
-      if (typeof onClose === "function") onClose();
     } catch (error) {
       console.error("Login error:", error);
       setErrorMsg("Network error. Please check your connection and try again.");

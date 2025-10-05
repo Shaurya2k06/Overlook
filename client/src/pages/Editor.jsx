@@ -5,6 +5,7 @@ import axios from "axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { Copy } from "lucide-react";
+import { useAuth } from "../hooks/useAuth.js";
 import {
   Terminal,
   Shield,
@@ -39,6 +40,7 @@ const SOCKET_URL = getSocketUrl();
 function Editor() {
   const { roomId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [socket, setSocket] = useState(null);
   const [participants, setParticipants] = useState([]);
@@ -67,32 +69,6 @@ function Editor() {
   const [terminalOutput, setTerminalOutput] = useState([]);
   const [isTerminalVisible, setIsTerminalVisible] = useState(false);
   const [auditLogs, setAuditLogs] = useState([]);
-  const [user, setUser] = useState(() => {
-    // Try to get user data from localStorage, fallback to default
-    const savedUser = localStorage.getItem("auth_email");
-    const userId = localStorage.getItem("auth_user_id");
-    if (savedUser) {
-      try {
-        // Use the same ID across sessions for proper reconnection
-        return {
-          username : savedUser,
-          id:
-            userId ||
-            `user_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
-        };
-      } catch (error) {
-        console.error("Error parsing saved user data:", error);
-      }
-    }
-    // Fallback to default user
-    const newUser = {
-      id: `user_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
-      username: `User_${Math.floor(Math.random() * 1000)}`,
-    };
-    // Save the new user to localStorage
-    localStorage.setItem("overlook_user", JSON.stringify(newUser));
-    return newUser;
-  });
 
   // Add terminal notification helper - moved up to avoid temporal dead zone
   const addTerminalNotification = useCallback((message, type = "info") => {
@@ -663,21 +639,6 @@ function Editor() {
     }
   };
 
-  // Update username
-  const _handleUsernameChange = (e) => {
-    const updatedUser = {
-      ...user,
-      username: e.target.value,
-    };
-    setUser(updatedUser);
-    // Save updated user data to localStorage (including the persistent ID)
-    const userDataForStorage = {
-      id: user.id,
-      username: e.target.value,
-    };
-    localStorage.setItem("overlook_user", JSON.stringify(userDataForStorage));
-  };
-
   // Copy room URL to clipboard
   const copyRoomUrl = () => {
     const url = roomId;
@@ -957,7 +918,10 @@ function Editor() {
                     </div>
                   </div>
                   <div className="p-6 overflow-y-auto h-full">
-                    <PromptInput onSubmit={handlePromptSubmit} roomId={roomId} />
+                    <PromptInput
+                      onSubmit={handlePromptSubmit}
+                      roomId={roomId}
+                    />
                   </div>
                 </div>
               </div>

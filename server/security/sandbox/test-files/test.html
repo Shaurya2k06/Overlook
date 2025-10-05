@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>XSS Test</title>
+</head>
+<body>
+    <h1>XSS Test File</h1>
+    <script>alert('XSS test executed');</script>
+    <img src="x" onerror="alert('Image XSS')">
+</body>
+</html>

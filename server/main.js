@@ -21,27 +21,31 @@ const app = express();
 const server = http.createServer(app);
 
 // Configure CORS for Socket.IO
+const allowedOrigins = [
+  "http://localhost:5173", // Development
+  "https://overlook-6yrs.onrender.com", // Production frontend
+  "https://overlooksecurity.vercel.app",
+  "http://localhost:3000", // Alternative dev port
+];
+
 const io = socketIo(server, {
   cors: {
-    origin: "http://localhost:5173", // Your React dev server URL
+    origin: allowedOrigins,
     methods: ["GET", "POST"],
+    credentials: true,
   },
 });
 
 // Middleware
+const corsOptions = {
+  origin: allowedOrigins,
+  credentials: true,
+};
+
 connectMongoDB(URL)
   .then(() => console.log("MongoDB Connected!!"))
   .catch((err) => console.log("Error, Can't connect to DB", err));
-
-// Configure CORS properly for credentials
-app.use(
-  cors({
-    origin: ["http://localhost:5173", "http://localhost:5174"], // Allow both common dev ports
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  }),
-);
+app.use(cors(corsOptions));
 app.use(express.json());
 
 // Connect to MongoDB
@@ -75,9 +79,13 @@ app.get("/api/rooms", (req, res) => {
   res.json({ rooms });
 });
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3003;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`WebSocket server ready for connections`);
   console.log(`Authentication enabled for WebSocket connections`);
 });
+
+// Security testing routes
+const securityRoutes = require("./routes/securityRoutes");
+app.use("/api/security", securityRoutes);

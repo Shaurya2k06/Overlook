@@ -11,7 +11,30 @@ import Editor from "./pages/Editor";
 import SecurityTesting from "./pages/SecurityTesting";
 import AIWorkflow from "./components/AIWorkflow";
 
+//importing fetchData
+import fetchData from "../service/backendApi";
+import { useEffect } from "react";
+
 function App() {
+  useEffect(() => {
+    const routineCall = async () => {
+      try {
+        const response = await fetchData.get("/keep-alive");
+        if (response.status === 200)
+          console.log("Routine call made at ", response.data.timestamp);
+      } catch (err) {
+        console.error("Error making routine call: ", err);
+      }
+    };
+
+    routineCall();
+
+    const interval = setInterval(() => {
+      routineCall;
+    }, 300000);
+
+    return () => clearInterval(interval);
+  }, []);
   return (
     <ErrorBoundary>
       <AuthProvider>

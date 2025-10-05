@@ -40,14 +40,50 @@ const io = socketIo(server, {
 
 // Middleware
 const corsOptions = {
-  origin: allowedOrigins,
-  credentials: true
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.log(`CORS blocked request from origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  exposedHeaders: ['Access-Control-Allow-Origin'],
+  optionsSuccessStatus: 200, // For legacy browser support
+  preflightContinue: false
 };
 
 connectMongoDB(URL)
   .then(() => console.log("MongoDB Connected!!"))
   .catch((err) => console.log("Error, Can't connect to DB", err));
+
 app.use(cors(corsOptions));
+
+// Additional CORS headers for production
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+  
+  next();
+});
+
 app.use(express.json());
 
 // Connect to MongoDB
@@ -71,6 +107,24 @@ app.get("/", (req, res) => {
     message: "Overlook Collaborative Code Editor",
     activeRooms: getRoomStats().length,
     status: "running",
+  });
+});
+
+// CORS test endpoint
+app.get("/api/cors-test", (req, res) => {
+  res.json({
+    message: "CORS test successful",
+    origin: req.headers.origin,
+    timestamp: new Date().toISOString(),
+    headers: req.headers
+  });
+});
+
+// Test endpoint for hybrid rooms
+app.get("/api/hybrid-rooms/test", (req, res) => {
+  res.json({
+    message: "Hybrid rooms endpoint accessible",
+    timestamp: new Date().toISOString()
   });
 });
 

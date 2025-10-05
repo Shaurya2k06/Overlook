@@ -209,3 +209,4 @@ class RoomController {
 }
 
 module.exports = RoomController;
+module.exports.rooms = rooms;

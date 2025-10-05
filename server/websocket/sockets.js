@@ -574,29 +574,41 @@ function setupSocketHandlers(io) {
       if (socket.roomId && user.userId) {
         console.log(`${user.username} updated file content: ${fileId}`);
 
-        // Update file data in room
+        // Update file data in room if it exists, otherwise create it
         const room = rooms.get(socket.roomId);
-        if (room && room.files.has(fileId)) {
-          const fileData = room.files.get(fileId);
-          fileData.content = content;
-          if (language) {
-            fileData.language = language;
+        if (room) {
+          if (room.files.has(fileId)) {
+            const fileData = room.files.get(fileId);
+            fileData.content = content;
+            if (language) {
+              fileData.language = language;
+            }
+            room.files.set(fileId, fileData);
+          } else {
+            // Create new file entry if it doesn't exist
+            const fileData = {
+              id: fileId,
+              name: fileId, // Use fileId as name for now
+              content: content,
+              language: language || 'javascript',
+              type: 'file'
+            };
+            room.files.set(fileId, fileData);
+            console.log(`Created new file entry in room: ${fileId}`);
           }
-          room.files.set(fileId, fileData);
 
           // Save file to database for model feeding
-          HybridRoomController.saveFileToDatabase(socket.roomId, {
-            name: fileData.name,
-            content: content,
-          });
-        } else {
-          console.log(
-            `File ${fileId} not found in room ${socket.roomId} files:`,
-            Array.from(room?.files.keys() || [])
-          );
+          try {
+            HybridRoomController.saveFileToDatabase(socket.roomId, {
+              name: fileId,
+              content: content,
+            });
+          } catch (error) {
+            console.log('Failed to save to database:', error.message);
+          }
         }
 
-        // Broadcast to all users in the room (including sender for sync)
+        // Always broadcast to all users in the room for real-time sync
         const broadcastData = {
           fileId,
           content,
@@ -608,7 +620,7 @@ function setupSocketHandlers(io) {
           "Broadcasting file-content-updated event to room:",
           socket.roomId,
           "with data:",
-          broadcastData
+          { fileId, contentLength: content.length, language }
         );
         console.log("Room users:", Array.from(room?.users.keys() || []));
         io.to(socket.roomId).emit("file-content-updated", broadcastData);

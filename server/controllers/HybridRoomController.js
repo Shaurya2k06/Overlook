@@ -25,9 +25,26 @@ class HybridRoomController {
         files: [], // Initialize empty files array
       });
 
-      // Note: Websocket room will be created when first user joins via websocket
-      console.log(`Database room created: ${roomId} (DB: ${dbRoom._id})`);
+      // Also create room in the regular rooms system for WebSocket compatibility
+      const RoomController = require("./RoomController");
+      try {
+        // Access the rooms Map from RoomController
+        const rooms = require("./RoomController").rooms;
+        if (!rooms.has(roomId)) {
+          rooms.set(roomId, {
+            id: roomId,
+            code: "",
+            participants: [],
+            createdAt: new Date(),
+            maxParticipants: 3,
+          });
+          console.log(`Regular room created for hybrid compatibility: ${roomId}`);
+        }
+      } catch (error) {
+        console.warn("Failed to create regular room for compatibility:", error);
+      }
 
+      console.log(`Database room created: ${roomId} (DB: ${dbRoom._id})`);
       console.log(`Created hybrid room: ${roomId} (DB: ${dbRoom._id})`);
 
       res.json({

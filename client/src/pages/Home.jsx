@@ -570,16 +570,7 @@ function login(email, password) {
                     <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                   </span>
                 </button>
-                <button
-                  onClick={() => navigate('/ai-workflow')}
-                  className="group px-14 py-5 bg-green-600 text-black hover:bg-green-500 transition-all duration-300 text-lg uppercase tracking-widest rounded-lg"
-                  style={{ fontFamily: "Advercase, monospace" }}
-                >
-                  <span className="flex items-center gap-3">
-                    🤖 AI Workflow
-                    <Brain className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                  </span>
-                </button>
+
                 <button
                   className="px-14 py-5 bg-transparent hover:bg-white/10 border border-white/50 text-white transition-all duration-300 text-lg uppercase tracking-widest hover:border-white rounded-lg"
                   style={{ fontFamily: "Advercase, monospace" }}
@@ -1437,15 +1428,15 @@ function login(email, password) {
                   <span className="text-white text-xs">CODE GENERATION</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-400 text-xs">CLAUDE 3.5</span>
+                  <span className="text-gray-400 text-xs">LLAMA 70B</span>
                   <span className="text-white text-xs">SECURITY ANALYSIS</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-400 text-xs">GROQ LLAMA</span>
+                  <span className="text-gray-400 text-xs">MISTRAL-MEDIUM</span>
                   <span className="text-white text-xs">FAST DEBUGGING</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-gray-400 text-xs">OLLAMA</span>
+                  <span className="text-gray-400 text-xs">GPT-4O</span>
                   <span className="text-white text-xs">RED TEAM TESTING</span>
                 </div>
               </div>

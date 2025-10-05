@@ -15,7 +15,7 @@ const UserRouter = require("./routes/UserRouter");
 const AIRouter = require("./routes/AIRouter");
 const hybridRoomRoutes = require("./routes/hybridRoomRoutes");
 const roomSyncRoutes = require("./routes/roomSyncRoutes");
-
+const securityRoutes = require("./routes/securityRoutes");
 const { connect } = require("http2");
 
 // Create Express app and HTTP server
@@ -100,6 +100,7 @@ app.use("/api/Rooms", RoomsRouter); // Add the RoomsRouter for room creation
 app.use("/api/ai", AIRouter); // AI pipeline endpoints
 app.use("/api/hybrid-rooms", hybridRoomRoutes); // Add hybrid room routes
 app.use("/api/room-sync", roomSyncRoutes); // Add rapid sync routes
+app.use("/api/security", securityRoutes);
 
 // Basic API routes
 app.get("/", (req, res) => {
@@ -179,5 +180,4 @@ app.use((err, req, res, next) => {
 });
 
 // Security testing routes
-const securityRoutes = require("./routes/securityRoutes");
-app.use("/api/security", securityRoutes);
+

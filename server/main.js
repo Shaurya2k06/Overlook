@@ -71,7 +71,7 @@ connectMongoDB(URL)
 // Configure CORS properly for credentials
 app.use(
   cors({
-    origin: ["http://localhost:5173", "http://localhost:5174"], // Allow both common dev ports
+    origin: allowedOrigins, // Allow both common dev ports
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],

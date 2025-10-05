@@ -37,16 +37,15 @@ async function addFilesToRoom(req, res) {
         .json({ message: "Room ID and files array are required" });
     }
     const room = await addFilesToRoomHelper(rid, files);
-    if (room.rid) {
-      return res
-        .status(200)
-        .json({ message: "Files added successfully", room });
-    } else {
-      return room;
-    }
+    return res
+      .status(200)
+      .json({ message: "Files added successfully", room });
   } catch (err) {
     console.log("error in add files to room");
     console.log(err);
+    if (err.message === "Room not found") {
+      return res.status(404).json({ message: "Room not found" });
+    }
     return res.status(500).json({ message: "Server error" });
   }
 }
@@ -55,18 +54,19 @@ async function addFilesToRoomHelper(rid, files) {
   try {
     const room = await Rooms.findOne({ rid });
     if (!room) {
-      return res.status(404).json({ message: "Room not found" });
+      throw new Error("Room not found");
     }
     room.files.push(...files);
     await room.save();
     return room;
   } catch (err) {
     console.error("Error adding files to room:", err);
-    return res.status(500).json({ message: "Server error" });
+    throw err;
   }
 }
 
 module.exports = {
   createRoom,
   addFilesToRoom,
+  addFilesToRoomHelper,
 };

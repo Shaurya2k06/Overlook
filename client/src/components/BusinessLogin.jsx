@@ -8,6 +8,7 @@ const BusinessLogin = memo(({ isOpen, onClose, onSwitchToSignup }) => {
     password: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
   const navigate = useNavigate();
 
   // Load Advercase font
@@ -39,17 +40,47 @@ const BusinessLogin = memo(({ isOpen, onClose, onSwitchToSignup }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
     setIsSubmitting(true);
+    setErrorMsg("");
 
     try {
-      // Simulate login
-      setTimeout(() => {
-        navigate("/dashboard");
-        onClose();
+      const resp = await fetch("http://localhost:3001/public/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
+
+      const data = await resp.json();
+
+      if (!resp.ok) {
+        // Backend sends { message: "..."} on errors
+        setErrorMsg(data?.message || "Login failed. Please try again.");
         setIsSubmitting(false);
-      }, 1000);
+        return;
+      }
+
+      // Expecting { message, token, userId }
+      if (data?.token) {
+        localStorage.setItem("]token", data.token);
+        localStorage.setItem("auth_user_id", data.userId);
+        // Optional convenience flags (string values):
+        localStorage.setItem("isLoggedIn", "true");
+        localStorage.setItem("auth_email", formData.email);
+      }
+
+      // Navigate to dashboard and close modal
+      navigate("/dashboard");
+      if (typeof onClose === "function") onClose();
     } catch (error) {
       console.error("Login error:", error);
+      setErrorMsg("Network error. Please check your connection and try again.");
+    } finally {
       setIsSubmitting(false);
     }
   };
@@ -96,6 +127,15 @@ const BusinessLogin = memo(({ isOpen, onClose, onSwitchToSignup }) => {
             >
               Sign in to your OverLook account
             </p>
+            {errorMsg ? (
+              <div
+                className="mt-4 text-sm bg-red-600/20 border border-red-500 text-red-300 px-4 py-2 rounded"
+                style={{ fontFamily: "Advercase, monospace" }}
+                role="alert"
+              >
+                {errorMsg}
+              </div>
+            ) : null}
           </div>
 
           {/* Login Form */}

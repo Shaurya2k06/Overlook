@@ -152,7 +152,9 @@ const TreeNode = ({ node, level = 0, parentId = null }) => {
   };
 
   const handleDelete = () => {
-    if (window.confirm(`Are you sure you want to delete "${node.name}"?`)) {
+    // Use a terminal-style confirmation instead of browser alert
+    const confirmDelete = confirm(`[SYSTEM] DELETE_CONFIRMATION\nAre you sure you want to delete "${node.name}"?\nThis action cannot be undone.`);
+    if (confirmDelete) {
       if (node.type === "folder") {
         actions.deleteFolder(node.id, parentId);
       } else {

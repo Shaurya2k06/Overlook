@@ -10,6 +10,7 @@ const BusinessSignup = memo(({ isOpen, onClose, onSwitchToLogin }) => {
     confirmPassword: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
   const navigate = useNavigate();
 
   // Load Advercase font
@@ -41,23 +42,74 @@ const BusinessSignup = memo(({ isOpen, onClose, onSwitchToLogin }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
     setIsSubmitting(true);
+    setErrorMsg("");
+
+    // quick client-side check in addition to the isFormComplete gate
+    if (formData.password !== formData.confirmPassword) {
+      setErrorMsg("Passwords do not match.");
+      setIsSubmitting(false);
+      return;
+    }
 
     try {
-      // Simulate signup
-      setTimeout(() => {
-        navigate("/dashboard");
-        onClose();
+      // 1) Signup
+      const signupResp = await fetch("http://localhost:3001/public/signup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.companyName, // backend expects 'name'
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
+
+      const signupData = await signupResp.json();
+      if (!signupResp.ok) {
+        setErrorMsg(signupData?.message || "Signup failed. Please try again.");
         setIsSubmitting(false);
-      }, 1000);
+        return;
+      }
+
+      // 2) Auto-login
+      const loginResp = await fetch("http://localhost:3001/public/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
+
+      const loginData = await loginResp.json();
+      if (!loginResp.ok) {
+        setErrorMsg(loginData?.message || "Signup success, but login failed. Please sign in.");
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Expecting { message, token, userId }
+      if (loginData?.token) {
+        localStorage.setItem("token", loginData.token);
+        localStorage.setItem("auth_user_id", loginData.userId);
+        localStorage.setItem("isLoggedIn", "true"); // string
+        localStorage.setItem("auth_email", formData.email);
+      }
+
+      // 3) Navigate
+      navigate("/dashboard");
+      if (typeof onClose === "function") onClose();
     } catch (error) {
       console.error("Signup error:", error);
+      setErrorMsg("Network error. Please check your connection and try again.");
+    } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleKeyPress = (e) => {
-    if (e.key === "Enter" && isFormComplete()) {
+    if (e.key === "Enter" && isFormComplete() && !isSubmitting) {
       handleSubmit(e);
     }
   };
@@ -104,6 +156,15 @@ const BusinessSignup = memo(({ isOpen, onClose, onSwitchToLogin }) => {
             >
               Create your OverLook account
             </p>
+            {errorMsg ? (
+              <div
+                className="mt-4 text-sm bg-red-600/20 border border-red-500 text-red-300 px-4 py-2 rounded"
+                style={{ fontFamily: "Advercase, monospace" }}
+                role="alert"
+              >
+                {errorMsg}
+              </div>
+            ) : null}
           </div>
 
           {/* Signup Form */}

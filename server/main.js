@@ -12,7 +12,9 @@ const { authenticateSocket } = require("./middleware/auth");
 const roomRoutes = require("./routes/roomRoutes");
 const RoomsRouter = require("./routes/RoomsRouter");
 const UserRouter = require("./routes/UserRouter");
+const AIRouter = require("./routes/AIRouter");
 const hybridRoomRoutes = require("./routes/hybridRoomRoutes");
+const roomSyncRoutes = require("./routes/roomSyncRoutes");
 
 const { connect } = require("http2");
 
@@ -38,14 +40,43 @@ const io = socketIo(server, {
 
 // Middleware
 const corsOptions = {
-  origin: allowedOrigins,
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.log(`CORS blocked request from origin: ${origin}`);
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
   credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "X-Requested-With",
+    "Accept",
+  ],
+  exposedHeaders: ["Access-Control-Allow-Origin"],
+  optionsSuccessStatus: 200, // For legacy browser support
+  preflightContinue: false,
 };
 
 connectMongoDB(URL)
   .then(() => console.log("MongoDB Connected!!"))
   .catch((err) => console.log("Error, Can't connect to DB", err));
-app.use(cors(corsOptions));
+
+// Configure CORS properly for credentials
+app.use(
+  cors({
+    origin: ["http://localhost:5173", "http://localhost:5174"], // Allow both common dev ports
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 app.use(express.json());
 
 // Connect to MongoDB
@@ -59,7 +90,9 @@ setupSocketHandlers(io);
 // API routes
 app.use("/api/rooms", roomRoutes);
 app.use("/api/Rooms", RoomsRouter); // Add the RoomsRouter for room creation
+app.use("/api/ai", AIRouter); // AI pipeline endpoints
 app.use("/api/hybrid-rooms", hybridRoomRoutes); // Add hybrid room routes
+app.use("/api/room-sync", roomSyncRoutes); // Add rapid sync routes
 
 // Basic API routes
 app.get("/", (req, res) => {
@@ -67,6 +100,24 @@ app.get("/", (req, res) => {
     message: "Overlook Collaborative Code Editor",
     activeRooms: getRoomStats().length,
     status: "running",
+  });
+});
+
+// CORS test endpoint
+app.get("/api/cors-test", (req, res) => {
+  res.json({
+    message: "CORS test successful",
+    origin: req.headers.origin,
+    timestamp: new Date().toISOString(),
+    headers: req.headers,
+  });
+});
+
+// Test endpoint for hybrid rooms
+app.get("/api/hybrid-rooms/test", (req, res) => {
+  res.json({
+    message: "Hybrid rooms endpoint accessible",
+    timestamp: new Date().toISOString(),
   });
 });
 

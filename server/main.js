@@ -27,14 +27,14 @@ const allowedOrigins = [
   "http://localhost:5173", // Development
   "https://overlook-6yrs.onrender.com", // Production frontend
   "https://overlooksecurity.vercel.app",
-  "http://localhost:3000" // Alternative dev port
+  "http://localhost:3000", // Alternative dev port
 ];
 
 const io = socketIo(server, {
   cors: {
     origin: allowedOrigins,
     methods: ["GET", "POST"],
-    credentials: true
+    credentials: true,
   },
 });
 
@@ -43,47 +43,40 @@ const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
-    
+
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
       console.log(`CORS blocked request from origin: ${origin}`);
-      callback(new Error('Not allowed by CORS'));
+      callback(new Error("Not allowed by CORS"));
     }
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
-  exposedHeaders: ['Access-Control-Allow-Origin'],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "X-Requested-With",
+    "Accept",
+  ],
+  exposedHeaders: ["Access-Control-Allow-Origin"],
   optionsSuccessStatus: 200, // For legacy browser support
-  preflightContinue: false
+  preflightContinue: false,
 };
 
 connectMongoDB(URL)
   .then(() => console.log("MongoDB Connected!!"))
   .catch((err) => console.log("Error, Can't connect to DB", err));
 
-app.use(cors(corsOptions));
-
-// Additional CORS headers for production
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin)) {
-    res.setHeader('Access-Control-Allow-Origin', origin);
-  }
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-  
-  // Handle preflight requests
-  if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
-  }
-  
-  next();
-});
-
+// Configure CORS properly for credentials
+app.use(
+  cors({
+    origin: ["http://localhost:5173", "http://localhost:5174"], // Allow both common dev ports
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  })
+);
 app.use(express.json());
 
 // Connect to MongoDB
@@ -116,7 +109,7 @@ app.get("/api/cors-test", (req, res) => {
     message: "CORS test successful",
     origin: req.headers.origin,
     timestamp: new Date().toISOString(),
-    headers: req.headers
+    headers: req.headers,
   });
 });
 
@@ -124,7 +117,7 @@ app.get("/api/cors-test", (req, res) => {
 app.get("/api/hybrid-rooms/test", (req, res) => {
   res.json({
     message: "Hybrid rooms endpoint accessible",
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 });
 
@@ -137,9 +130,13 @@ app.get("/api/rooms", (req, res) => {
   res.json({ rooms });
 });
 
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 3003;
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`WebSocket server ready for connections`);
   console.log(`Authentication enabled for WebSocket connections`);
 });
+
+// Security testing routes
+const securityRoutes = require("./routes/securityRoutes");
+app.use("/api/security", securityRoutes);

@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vulnerable Web Page - Security Testing</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .vulnerability {
+            background: #ffe6e6;
+            border: 1px solid #ff9999;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        .form-group {
+            margin: 10px 0;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+        button {
+            background: #007cba;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .dangerous {
+            background: #dc3545;
+        }
+        .warning {
+            color: #d63384;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Vulnerable Web Application - Security Testing Lab</h1>
+        <div class="warning">
+            ⚠️ WARNING: This page contains intentional security vulnerabilities for educational purposes only! ⚠️
+        </div>
+
+        <!-- XSS Vulnerability Section -->
+        <div class="vulnerability">
+            <h2>🚨 Cross-Site Scripting (XSS) Vulnerabilities</h2>
+
+            <!-- Reflected XSS -->
+            <h3>Reflected XSS</h3>
+            <form action="#" method="GET">
+                <div class="form-group">
+                    <label>Search (Reflected XSS):</label>
+                    <input type="text" name="search" placeholder="Try: <script>alert('XSS')</script>">
+                    <button type="submit">Search</button>
+                </div>
+            </form>
+
+            <script>
+                // Vulnerable: Direct URL parameter injection
+                const urlParams = new URLSearchParams(window.location.search);
+                const searchQuery = urlParams.get('search');
+                if (searchQuery) {
+                    document.write('<p>Search results for: ' + searchQuery + '</p>');
+                }
+            </script>
+
+            <!-- DOM-based XSS -->
+            <h3>DOM-based XSS</h3>
+            <div class="form-group">
+                <label>Name (DOM XSS):</label>
+                <input type="text" id="nameInput" placeholder="Enter your name" onchange="updateGreeting()">
+                <div id="greeting"></div>
+            </div>
+
+            <!-- Stored XSS simulation -->
+            <h3>Stored XSS Simulation</h3>
+            <form>
+                <div class="form-group">
+                    <label>Comment (Stored XSS):</label>
+                    <textarea id="comment" placeholder="Try: <img src=x onerror=alert('Stored XSS')>"></textarea>
+                    <button type="button" onclick="addComment()">Add Comment</button>
+                </div>
+            </form>
+            <div id="comments"></div>
+        </div>
+
+        <!-- CSRF Vulnerability Section -->
+        <div class="vulnerability">
+            <h2>🚨 Cross-Site Request Forgery (CSRF)</h2>
+            <form action="/delete-account" method="POST">
+                <h3>Account Management (No CSRF Protection)</h3>
+                <input type="hidden" name="action" value="delete">
+                <input type="hidden" name="confirm" value="yes">
+                <button type="submit" class="dangerous">Delete Account (No CSRF Token)</button>
+            </form>
+
+            <form action="/transfer-money" method="POST">
+                <h3>Money Transfer (Vulnerable)</h3>
+                <div class="form-group">
+                    <label>Transfer Amount:</label>
+                    <input type="number" name="amount" placeholder="1000">
+                </div>
+                <div class="form-group">
+                    <label>To Account:</label>
+                    <input type="text" name="to_account" placeholder="Attacker's Account">
+                </div>
+                <button type="submit" class="dangerous">Transfer Money (No Protection)</button>
+            </form>
+        </div>
+
+        <!-- Clickjacking Vulnerability -->
+        <div class="vulnerability">
+            <h2>🚨 Clickjacking Vulnerability</h2>
+            <p>This page has no X-Frame-Options header, making it vulnerable to clickjacking attacks.</p>
+            <button onclick="sensitiveAction()">Click for $1000 Bonus!</button>
+            <iframe src="about:blank" style="opacity: 0.1; position: absolute; top: 0; left: 0; width: 200px; height: 50px;"></iframe>
+        </div>
+
+        <!-- Insecure Form Handling -->
+        <div class="vulnerability">
+            <h2>🚨 Insecure Form Handling</h2>
+
+            <!-- Password in URL -->
+            <form action="#" method="GET">
+                <h3>Password in URL (GET method)</h3>
+                <div class="form-group">
+                    <label>Username:</label>
+                    <input type="text" name="username">
+                </div>
+                <div class="form-group">
+                    <label>Password:</label>
+                    <input type="password" name="password">
+                </div>
+                <button type="submit">Login (Insecure GET)</button>
+            </form>
+
+            <!-- No input validation -->
+            <form>
+                <h3>No Input Validation</h3>
+                <div class="form-group">
+                    <label>SQL Query:</label>
+                    <input type="text" id="sqlInput" placeholder="'; DROP TABLE users; --">
+                    <button type="button" onclick="executeQuery()">Execute Query</button>
+                </div>
+                <div id="sqlResult"></div>
+            </form>
+        </div>
+
+        <!-- Information Disclosure -->
+        <div class="vulnerability">
+            <h2>🚨 Information Disclosure</h2>
+
+            <!-- Exposed sensitive data -->
+            <div style="display: none;" id="hiddenData">
+                <h3>Hidden Sensitive Data</h3>
+                <p>Database Password: admin123</p>
+                <p>API Key: sk-1234567890abcdef</p>
+                <p>JWT Secret: super-secret-jwt-key</p>
+            </div>
+            <button onclick="showHiddenData()">Show Debug Info</button>
+
+            <!-- Client-side comments with sensitive info -->
+            <!--
+                TODO: Remove before production
+                Admin credentials: admin/password123
+                Database: mysql://root:secret@localhost:3306/app
+                API endpoint: https://internal-api.company.com/v1/
+            -->
+        </div>
+
+        <!-- Weak Authentication -->
+        <div class="vulnerability">
+            <h2>🚨 Weak Authentication</h2>
+
+            <form>
+                <h3>Weak Password Policy</h3>
+                <div class="form-group">
+                    <label>New Password:</label>
+                    <input type="password" id="weakPassword" placeholder="Password requirements: min 1 character">
+                    <button type="button" onclick="validateWeakPassword()">Set Password</button>
+                </div>
+            </form>
+
+            <form>
+                <h3>Predictable Session IDs</h3>
+                <div class="form-group">
+                    <label>Session ID:</label>
+                    <input type="text" id="sessionId" readonly>
+                    <button type="button" onclick="generateWeakSession()">Generate Session</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Insecure JavaScript -->
+        <div class="vulnerability">
+            <h2>🚨 Insecure JavaScript Code</h2>
+
+            <div class="form-group">
+                <label>Evaluate Code:</label>
+                <textarea id="jsCode" placeholder="Try: alert(document.cookie)"></textarea>
+                <button type="button" onclick="dangerousEval()">Execute JavaScript</button>
+            </div>
+
+            <div class="form-group">
+                <label>Dynamic Script Loading:</label>
+                <input type="text" id="scriptUrl" placeholder="Enter script URL">
+                <button type="button" onclick="loadExternalScript()">Load Script</button>
+            </div>
+        </div>
+
+        <!-- File Upload Vulnerabilities -->
+        <div class="vulnerability">
+            <h2>🚨 Insecure File Upload</h2>
+
+            <form enctype="multipart/form-data">
+                <div class="form-group">
+                    <label>Upload Any File (No Validation):</label>
+                    <input type="file" id="fileUpload" accept="*">
+                    <button type="button" onclick="simulateUpload()">Upload File</button>
+                </div>
+            </form>
+            <div id="uploadResult"></div>
+        </div>
+
+        <!-- Local Storage Misuse -->
+        <div class="vulnerability">
+            <h2>🚨 Insecure Data Storage</h2>
+
+            <div class="form-group">
+                <label>Credit Card Number:</label>
+                <input type="text" id="creditCard" placeholder="1234-5678-9012-3456">
+                <button type="button" onclick="saveToLocalStorage()">Save to Local Storage</button>
+            </div>
+
+            <div class="form-group">
+                <button type="button" onclick="showStoredData()">Show All Stored Data</button>
+                <div id="storedData"></div>
+            </div>
+        </div>
+
+        <footer style="margin-top: 40px; text-align: center; color: #666;">
+            <p>🔒 This is a deliberately vulnerable application for security testing purposes.</p>
+            <p>Created for Overlook Security Suite - Educational Use Only</p>
+        </footer>
+    </div>
+
+    <script>
+        // Vulnerable JavaScript functions
+
+        // XSS Functions
+        function updateGreeting() {
+            const name = document.getElementById('nameInput').value;
+            // Vulnerable: Direct innerHTML assignment
+            document.getElementById('greeting').innerHTML = '<h4>Hello, ' + name + '!</h4>';
+        }
+
+        function addComment() {
+            const comment = document.getElementById('comment').value;
+            const commentsDiv = document.getElementById('comments');
+            // Vulnerable: No sanitization
+            commentsDiv.innerHTML += '<div style="border: 1px solid #ccc; padding: 10px; margin: 5px;">' + comment + '</div>';
+        }
+
+        // CSRF simulation
+        function sensitiveAction() {
+            alert('Sensitive action performed! In a real attack, this could be dangerous.');
+        }
+
+        // SQL Injection simulation
+        function executeQuery() {
+            const query = document.getElementById('sqlInput').value;
+            // Vulnerable: Direct query execution (simulated)
+            document.getElementById('sqlResult').innerHTML =
+                '<p style="color: red;">Executing: ' + query + '</p>' +
+                '<p>Error: Table "users" doesn\'t exist (simulated SQL injection success)</p>';
+        }
+
+        // Information disclosure
+        function showHiddenData() {
+            document.getElementById('hiddenData').style.display = 'block';
+            // Also log sensitive data to console
+            console.log('Sensitive data exposed in console');
+            console.log({
+                dbPassword: 'admin123',
+                apiKey: 'sk-1234567890abcdef',
+                jwtSecret: 'super-secret-jwt-key'
+            });
+        }
+
+        // Weak authentication
+        function validateWeakPassword() {
+            const password = document.getElementById('weakPassword').value;
+            if (password.length >= 1) {
+                alert('Password accepted! (Weak validation)');
+            } else {
+                alert('Password must be at least 1 character');
+            }
+        }
+
+        function generateWeakSession() {
+            // Vulnerable: Predictable session ID
+            const sessionId = 'sess_' + Math.floor(Math.random() * 1000);
+            document.getElementById('sessionId').value = sessionId;
+        }
+
+        // Dangerous JavaScript execution
+        function dangerousEval() {
+            const code = document.getElementById('jsCode').value;
+            try {
+                // Vulnerable: Direct eval() usage
+                eval(code);
+            } catch (e) {
+                alert('Error: ' + e.message);
+            }
+        }
+
+        function loadExternalScript() {
+            const url = document.getElementById('scriptUrl').value;
+            // Vulnerable: Loading external scripts without validation
+            const script = document.createElement('script');
+            script.src = url;
+            document.head.appendChild(script);
+        }
+
+        // File upload simulation
+        function simulateUpload() {
+            const fileInput = document.getElementById('fileUpload');
+            const file = fileInput.files[0];
+
+            if (file) {
+                // Vulnerable: No file type checking
+                document.getElementById('uploadResult').innerHTML =
+                    '<p style="color: green;">File "' + file.name + '" uploaded successfully!</p>' +
+                    '<p>Size: ' + file.size + ' bytes</p>' +
+                    '<p style="color: red;">Warning: No security validation performed!</p>';
+            }
+        }
+
+        // Insecure data storage
+        function saveToLocalStorage() {
+            const creditCard = document.getElementById('creditCard').value;
+            // Vulnerable: Storing sensitive data in localStorage
+            localStorage.setItem('creditCard', creditCard);
+            localStorage.setItem('sessionToken', 'abc123456789');
+            localStorage.setItem('userRole', 'admin');
+            alert('Sensitive data saved to localStorage (insecure!)');
+        }
+
+        function showStoredData() {
+            let data = '<h4>Data in Local Storage:</h4>';
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                const value = localStorage.getItem(key);
+                data += '<p><strong>' + key + ':</strong> ' + value + '</p>';
+            }
+            document.getElementById('storedData').innerHTML = data;
+        }
+
+        // Automatically expose some data on page load
+        window.onload = function() {
+            // Vulnerable: Exposing sensitive data in global scope
+            window.appConfig = {
+                apiUrl: 'https://api.vulnerable-app.com',
+                dbConnection: 'mysql://user:pass@db.internal:3306/app',
+                secretKey: 'super-secret-key-123'
+            };
+
+            // Vulnerable: Console logging sensitive information
+            console.log('App loaded with config:', window.appConfig);
+        };
+
+        // Vulnerable: Global function that can be called from console
+        window.backdoor = function(cmd) {
+            eval(cmd);
+        };
+    </script>
+</body>
+</html>

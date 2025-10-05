@@ -12,6 +12,7 @@ const { authenticateSocket } = require("./middleware/auth");
 const roomRoutes = require("./routes/roomRoutes");
 const RoomsRouter = require("./routes/RoomsRouter");
 const UserRouter = require("./routes/UserRouter");
+const AIRouter = require("./routes/AIRouter");
 const hybridRoomRoutes = require("./routes/hybridRoomRoutes");
 
 const { connect } = require("http2");
@@ -59,6 +60,7 @@ setupSocketHandlers(io);
 // API routes
 app.use("/api/rooms", roomRoutes);
 app.use("/api/Rooms", RoomsRouter); // Add the RoomsRouter for room creation
+app.use("/api/ai", AIRouter); // AI pipeline endpoints
 app.use("/api/hybrid-rooms", hybridRoomRoutes); // Add hybrid room routes
 
 // Basic API routes

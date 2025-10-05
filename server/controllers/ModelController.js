@@ -24,7 +24,9 @@ async function agentChainHandler(req, res) {
 
     const room = await Rooms.findOne({ rid });
     if (!room) {
-      console.log(`⚠️  Room ${rid} not found in ModelController, using empty files array for testing`);
+      console.log(
+        `⚠️  Room ${rid} not found in ModelController, using empty files array for testing`
+      );
       // Use empty files array for testing when room doesn't exist
       files = [];
     } else {
@@ -76,7 +78,9 @@ async function agentChainWithRedTeamHandler(req, res) {
 
     const room = await Rooms.findOne({ rid });
     if (!room) {
-      console.log(`⚠️  Room ${rid} not found in ModelController (with red team), using empty files array for testing`);
+      console.log(
+        `⚠️  Room ${rid} not found in ModelController (with red team), using empty files array for testing`
+      );
       // Use empty files array for testing when room doesn't exist
       files = [];
     } else {
@@ -123,7 +127,9 @@ async function geminiHandler(req, res) {
 
     const room = await Rooms.findOne({ rid });
     if (!room) {
-      console.log(`⚠️  Room ${rid} not found in Gemini handler, using empty files array for testing`);
+      console.log(
+        `⚠️  Room ${rid} not found in Gemini handler, using empty files array for testing`
+      );
       // Use empty files array for testing when room doesn't exist
       files = [];
     } else {
@@ -155,11 +161,7 @@ async function agent4_securityAndFinalization(originalPrompt, files = []) {
     // Call Agent 3 (Debugging) recursively
     const debuggingResults = await agent3_debugging(originalPrompt, files);
 
-  const payload = {
-    messages: [
-      {
-        role: "system",
-        content: `You are a security specialist and code finalization expert. 
+    const systemPrompt = `You are a security specialist and code finalization expert. 
 
 Your task is to analyze the provided code and return a JSON object containing secure, production-ready files.
 
@@ -180,60 +182,64 @@ For Node.js: server.js, package.json, README.md
 Example output:
 {"index.html":"<!DOCTYPE html>\\n<html>\\n<head>\\n<title>Website</title>\\n</head>\\n<body>\\n<h1>Hello</h1>\\n</body>\\n</html>","style.css":"body{font-family:Arial;}","script.js":"console.log('loaded');"}
 
-Return ONLY the JSON object:`,
-      },
-      {
-        role: "user",
-        content: `Perform security analysis and create final JSON output for:
+Return ONLY the JSON object:`;
 
-${debuggingResults.debuggedCode}`,
-      },
-    ],
-    model: "mistral-ai/mistral-medium-2505",
-    temperature: 0.1,
-    max_tokens: 6000,
-  };
+    const userPrompt = `Perform security analysis and create final JSON output for:\n\n${debuggingResults.debuggedCode}`;
 
-  const response = await makeGitHubModelsRequest(payload);
-  const content = response.choices[0].message.content.trim();
+    // Call the helper which wraps GitHub Models API
+    const content = (
+      await makeGitHubModelsRequest(
+        systemPrompt,
+        userPrompt,
+        "mistral-ai/mistral-medium-2505"
+      )
+    ).trim();
 
-  let finalFiles;
-  try {
-    console.log('Raw Agent 4 response:', content.substring(0, 500) + '...');
-    
-    // Clean the content - remove any extra text before/after JSON
-    let cleanContent = content.trim();
-    
-    // Try to extract JSON from various formats
-    const jsonPatterns = [
-      /```json\s*({[\s\S]*?})\s*```/,  // JSON in code blocks
-      /({\s*"[^"]*"\s*:[\s\S]*})/,      // Direct JSON object
-      /^\s*({[\s\S]*})\s*$/            // Just JSON with whitespace
-    ];
-    
-    let jsonStr = null;
-    for (const pattern of jsonPatterns) {
-      const match = cleanContent.match(pattern);
-      if (match) {
-        jsonStr = match[1];
-        break;
+    let finalFiles;
+    try {
+      console.log("Raw Agent 4 response:", content.substring(0, 500) + "...");
+
+      // Clean the content - remove any extra text before/after JSON
+      let cleanContent = content.trim();
+
+      // Try to extract JSON from various formats
+      const jsonPatterns = [
+        /```json\s*({[\s\S]*?})\s*```/, // JSON in code blocks
+        /({\s*"[^"]*"\s*:[\s\S]*})/, // Direct JSON object
+        /^\s*({[\s\S]*})\s*$/, // Just JSON with whitespace
+      ];
+
+      let jsonStr = null;
+      for (const pattern of jsonPatterns) {
+        const match = cleanContent.match(pattern);
+        if (match) {
+          jsonStr = match[1];
+          break;
+        }
       }
+
+      if (jsonStr) {
+        finalFiles = JSON.parse(jsonStr);
+        console.log(
+          "Successfully parsed JSON with",
+          Object.keys(finalFiles).length,
+          "files"
+        );
+      } else {
+        throw new Error("No JSON pattern found");
+      }
+    } catch (error) {
+      console.warn(
+        "Failed to parse JSON response, creating intelligent fallback"
+      );
+      console.log("Parse error:", error.message);
+
+      // Create intelligent fallback based on content
+      finalFiles = createIntelligentFallback(
+        content,
+        debuggingResults.structuredPrompt
+      );
     }
-    
-    if (jsonStr) {
-      finalFiles = JSON.parse(jsonStr);
-      console.log('Successfully parsed JSON with', Object.keys(finalFiles).length, 'files');
-    } else {
-      throw new Error('No JSON pattern found');
-    }
-    
-  } catch (error) {
-    console.warn("Failed to parse JSON response, creating intelligent fallback");
-    console.log('Parse error:', error.message);
-    
-    // Create intelligent fallback based on content
-    finalFiles = createIntelligentFallback(content, debuggingResults.structuredPrompt);
-  }
 
     return {
       structuredPrompt: debuggingResults.structuredPrompt,
@@ -267,18 +273,14 @@ RESPONSIBILITIES:
 
 IMPORTANT: Return ONLY the corrected/improved code, no explanations or markdown formatting.`;
 
-    const userPrompt = `Debug and improve this code:
+    const userPrompt = `Debug and improve this code:\n\n${codeGenResults.generatedCode}`;
 
-${codeGenResults.generatedCode}`,
-      },
-    ],
-    model: "meta/Llama-3.3-70B-Instruct",
-    temperature: 0.1,
-    max_tokens: 4000,
-  };
-
-  const response = await makeGitHubModelsRequest(payload);
-  const debuggedCode = response.choices[0].message.content;
+    // Request the model via the GitHub Models helper and receive the debugged code string
+    const debuggedCode = await makeGitHubModelsRequest(
+      systemPrompt,
+      userPrompt,
+      "meta/Llama-3.3-70B-Instruct"
+    );
 
     return {
       structuredPrompt: codeGenResults.structuredPrompt,
@@ -299,7 +301,7 @@ async function agent2_codeGeneration(originalPrompt, files = []) {
     // Call Agent 1 (Prompt Structuring) recursively
     const structuredPrompt = await agent1_promptStructuring(
       originalPrompt,
-      files,
+      files
     );
 
     const systemPrompt = `You are a senior software engineer specializing in code generation. Your task is to create functional, well-structured code based on requirements.
@@ -315,19 +317,16 @@ INSTRUCTIONS:
 
 IMPORTANT: Return only raw code output, no markdown backticks or formatting.`;
 
-    const userPrompt = `${structuredPrompt}
+    const userPrompt = `${structuredPrompt}\n\nContext Files:\n${files
+      .map((f) => `=== ${f.filename} ===\n${f.code}`)
+      .join("\n\n")}`;
 
-Context Files:
-${files.map((f) => `=== ${f.filename} ===\n${f.code}`).join("\n\n")}`,
-      },
-    ],
-    model: "openai/gpt-4o",
-    temperature: 0.1,
-    max_tokens: 4000,
-  };
-
-  const response = await makeGitHubModelsRequest(payload);
-  const generatedCode = response.choices[0].message.content;
+    // Request the model via the GitHub Models helper and receive the generated code string
+    const generatedCode = await makeGitHubModelsRequest(
+      systemPrompt,
+      userPrompt,
+      "openai/gpt-4o"
+    );
 
     return {
       structuredPrompt: structuredPrompt,
@@ -359,19 +358,22 @@ INSTRUCTIONS:
 
 Return ONLY the structured prompt text, no additional commentary.`;
 
-    const userPrompt = `Original Request: ${originalPrompt}
+    const userPrompt = `Original Request: ${originalPrompt}\n\nExisting Files:\n${files
+      .map((f) => `File: ${f.filename}\n${f.code}`)
+      .join("\n\n")}`;
 
-Existing Files:
-${files.map((f) => `File: ${f.filename}\n${f.code}`).join("\n\n")}`,
-      },
-    ],
-    model: "openai/gpt-4o",
-    temperature: 0.3,
-    max_tokens: 2000,
-  };
+    // Use the GitHub Models helper to get the structured prompt text
+    const structured = await makeGitHubModelsRequest(
+      systemPrompt,
+      userPrompt,
+      "openai/gpt-4o"
+    );
 
-  const response = await makeGitHubModelsRequest(payload);
-  return response.choices[0].message.content;
+    return structured;
+  } catch (error) {
+    console.error("Agent 1 error:", error);
+    throw new Error(`Prompt structuring failed: ${error.message}`);
+  }
 }
 
 /* ----------------------  LEGACY GEMINI FUNCTIONS (PRESERVED)  ---------------------- */
@@ -486,7 +488,7 @@ Now output ONLY the generated/updated files in the exact sectioned format descri
 async function makeGitHubModelsRequest(
   systemPrompt,
   userPrompt,
-  model = "gpt-4o",
+  model = "gpt-4o"
 ) {
   try {
     if (!githubToken) {
@@ -530,23 +532,25 @@ async function makeGitHubModelsRequest(
   } catch (error) {
     console.error(
       "GitHub Models API Error:",
-      error.response?.data || error.message,
+      error.response?.data || error.message
     );
 
     if (error.response?.status === 401) {
       throw new Error(
-        "GitHub Models API authentication failed. Check your GITHUB_MODELS_TOKEN.",
+        "GitHub Models API authentication failed. Check your GITHUB_MODELS_TOKEN."
       );
     } else if (error.response?.status === 429) {
       throw new Error(
-        "GitHub Models API rate limit exceeded. Please try again later.",
+        "GitHub Models API rate limit exceeded. Please try again later."
       );
     } else if (error.response?.status === 404) {
       throw new Error(`GitHub Models API model not found: ${model}`);
     }
 
     throw new Error(
-      `GitHub Models API request failed: ${error.response?.data?.error?.message || error.message}`,
+      `GitHub Models API request failed: ${
+        error.response?.data?.error?.message || error.message
+      }`
     );
   }
 }
@@ -610,7 +614,7 @@ async function runRedTeamOnGeneratedCode(finalOutput) {
         code.includes("eval(")
       ) {
         vulnerabilities.push(
-          "Potential command injection vulnerability detected",
+          "Potential command injection vulnerability detected"
         );
       }
 
@@ -620,7 +624,7 @@ async function runRedTeamOnGeneratedCode(finalOutput) {
         (code.includes("password") || code.includes("token"))
       ) {
         vulnerabilities.push(
-          "Insecure random number generation for security purposes",
+          "Insecure random number generation for security purposes"
         );
       }
 
@@ -676,7 +680,7 @@ function generateRedTeamSummary(redTeamResults) {
           vuln.includes("injection") ||
           vuln.includes("XSS") ||
           vuln.includes("credentials") ||
-          vuln.includes("command"),
+          vuln.includes("command")
       );
 
       if (hasCritical) {
@@ -696,11 +700,15 @@ function generateRedTeamSummary(redTeamResults) {
 
 /* ----------------------  UTILITY FUNCTIONS  ---------------------- */
 function createIntelligentFallback(content, prompt) {
-  const lowerPrompt = (prompt || '').toLowerCase();
+  const lowerPrompt = (prompt || "").toLowerCase();
   const lowerContent = content.toLowerCase();
-  
+
   // Determine project type from prompt and content
-  if (lowerPrompt.includes('website') || lowerPrompt.includes('landing') || lowerContent.includes('html')) {
+  if (
+    lowerPrompt.includes("website") ||
+    lowerPrompt.includes("landing") ||
+    lowerContent.includes("html")
+  ) {
     return {
       "index.html": `<!DOCTYPE html>
 <html lang="en">
@@ -754,9 +762,9 @@ main {
             alert('Hello from your generated website!');
         });
     }
-});`
+});`,
     };
-  } else if (lowerPrompt.includes('react') || lowerContent.includes('jsx')) {
+  } else if (lowerPrompt.includes("react") || lowerContent.includes("jsx")) {
     return {
       "App.jsx": `import React, { useState } from 'react';
 import './App.css';
@@ -813,7 +821,7 @@ button {
     "start": "react-scripts start",
     "build": "react-scripts build"
   }
-}`
+}`,
     };
   } else {
     // Generic fallback
@@ -842,7 +850,7 @@ ${content.substring(0, 500)}...
 1. Review the generated files
 2. Modify as needed
 3. Run or deploy your project
-`
+`,
     };
   }
 }
@@ -857,7 +865,7 @@ async function validateGitHubToken() {
 // Non-recursive helper function for backward compatibility
 async function runAgentChain(prompt, files = []) {
   console.warn(
-    "runAgentChain is deprecated in favor of recursive implementation",
+    "runAgentChain is deprecated in favor of recursive implementation"
   );
   const result = await agent4_securityAndFinalization(prompt, files);
   return {

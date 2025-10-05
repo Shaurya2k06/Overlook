@@ -21,7 +21,9 @@ import {
 } from "lucide-react";
 import GlobalTerminal from "../components/GlobalTerminal";
 
-const API_BASE_URL = "https://overlook-6yrs.onrender.com/api";
+import { getApiUrl } from "../config/environment.js";
+
+const API_BASE_URL = getApiUrl("/api");
 
 function Dashboard() {
   const navigate = useNavigate();

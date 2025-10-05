@@ -103,20 +103,21 @@ function Dashboard() {
 
   // Get user data from localStorage
   const [user] = useState(() => {
-    const savedUser = localStorage.getItem("overlook_user");
+    const savedUser = localStorage.getItem("auth_email");
     if (savedUser) {
       try {
-        const parsedUser = JSON.parse(savedUser);
+        const userId = localStorage.getItem("auth_user_id");
         return {
           id:
-            parsedUser.id ||
+             userId ||
             `user_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
-          username: parsedUser.username || "guest",
+          username: savedUser || "guest",
         };
       } catch (error) {
         console.error("Error parsing saved user data:", error);
       }
     }
+    console.log(savedUser)
     // Fallback to default user
     return {
       id: `user_${Date.now()}_${Math.floor(Math.random() * 10000)}`,

@@ -69,15 +69,15 @@ function Editor() {
   const [auditLogs, setAuditLogs] = useState([]);
   const [user, setUser] = useState(() => {
     // Try to get user data from localStorage, fallback to default
-    const savedUser = localStorage.getItem("overlook_user");
+    const savedUser = localStorage.getItem("auth_email");
+    const userId = localStorage.getItem("auth_user_id");
     if (savedUser) {
       try {
-        const parsedUser = JSON.parse(savedUser);
         // Use the same ID across sessions for proper reconnection
         return {
-          ...parsedUser,
+          username : savedUser,
           id:
-            parsedUser.id ||
+            userId ||
             `user_${Date.now()}_${Math.floor(Math.random() * 10000)}`,
         };
       } catch (error) {

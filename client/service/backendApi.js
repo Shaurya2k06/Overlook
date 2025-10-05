@@ -1,24 +1,13 @@
 import axios from "axios";
+import { getApiUrl, getSocketUrl } from "../src/config/environment.js";
 
-// Determine the API base URL based on environment
-const getApiBaseUrl = () => {
-  if (import.meta.env.MODE === "production") {
-    return "https://overlook-6yrs.onrender.com/api";
-  }
-  return "http://localhost:3001/api";
-};
-
-// Determine the Socket URL based on environment
-export const getSocketUrl = () => {
-  if (import.meta.env.MODE === "production") {
-    return "https://overlook-6yrs.onrender.com";
-  }
-  return "http://localhost:3001";
-};
-
+// Create axios instance with configuration
 const fetchData = axios.create({
-  baseURL: getApiBaseUrl(),
+  baseURL: getApiUrl("/api"),
   withCredentials: true,
 });
+
+// Export the socket URL getter
+export { getSocketUrl };
 
 export default fetchData;

@@ -1,4 +1,5 @@
 import React, { createContext, useState, useEffect } from "react";
+import { getApiUrl } from "../config/environment.js";
 
 export const AuthContext = createContext();
 
@@ -46,7 +47,8 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
 
-      const response = await fetch("http://localhost:3001/public/login", {
+      const apiBaseUrl = getApiUrl("/public");
+      const response = await fetch(`${apiBaseUrl}/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -100,20 +102,18 @@ export const AuthProvider = ({ children }) => {
     try {
       setLoading(true);
 
-      const signupResponse = await fetch(
-        "http://localhost:3001/public/signup",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            name: name,
-            email: email,
-            password: password,
-          }),
-        }
-      );
+      const apiBaseUrl = getApiUrl("/public");
+      const signupResponse = await fetch(`${apiBaseUrl}/signup`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: name,
+          email: email,
+          password: password,
+        }),
+      });
 
       const signupData = await signupResponse.json();
 
@@ -125,7 +125,7 @@ export const AuthProvider = ({ children }) => {
       }
 
       // Auto-login after successful signup
-      const loginResponse = await fetch("http://localhost:3001/public/login", {
+      const loginResponse = await fetch(`${apiBaseUrl}/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

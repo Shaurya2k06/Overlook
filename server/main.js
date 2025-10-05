@@ -23,12 +23,19 @@ const app = express();
 const server = http.createServer(app);
 
 // Configure CORS for Socket.IO
-const allowedOrigins = [
+const defaultAllowedOrigins = [
   "http://localhost:5173", // Development
-  "https://overlook-6yrs.onrender.com", // Production frontend
-  "https://overlooksecurity.vercel.app",
   "http://localhost:3000", // Alternative dev port
+  "https://overlooksecurity.vercel.app", // Production frontend
+  "https://overlook-6yrs.onrender.com", // Production backend (for internal calls)
+  "https://overlook.vercel.app", // Alternative production frontend
+  "https://overlook-app.vercel.app", // Another potential production frontend
 ];
+
+// Allow environment variable override for CORS origins
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(",").map((origin) => origin.trim())
+  : defaultAllowedOrigins;
 
 const io = socketIo(server, {
   cors: {
@@ -71,7 +78,7 @@ connectMongoDB(URL)
 // Configure CORS properly for credentials
 app.use(
   cors({
-    origin: ["http://localhost:5173", "http://localhost:5174"], // Allow both common dev ports
+    origin: allowedOrigins, // Allow both common dev ports
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],

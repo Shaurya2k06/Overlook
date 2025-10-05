@@ -30,12 +30,14 @@ import StatusBar from "../components/StatusBar";
 import RoomChat from "../components/RoomChat";
 import fetchData, { getSocketUrl } from "../../service/backendApi";
 
+import {
+  getApiUrl,
+  getSocketUrl as getSocketUrlConfig,
+} from "../config/environment.js";
+
 // Dynamic API and Socket URLs
-const API_BASE_URL =
-  import.meta.env.MODE === "production"
-    ? "https://overlook-6yrs.onrender.com/api"
-    : "http://localhost:3001/api";
-const SOCKET_URL = getSocketUrl();
+const API_BASE_URL = getApiUrl("/api");
+const SOCKET_URL = getSocketUrlConfig();
 
 function Editor() {
   const { roomId } = useParams();

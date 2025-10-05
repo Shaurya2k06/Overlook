@@ -1,4 +1,4 @@
-# Overlook - Secure Collaborative Coding Platform
+# Overlook - Secure Collaborative Coding Platform.
 
 A real-time collaborative code editor with terminal aesthetics, AI assistance, and security testing capabilities. Built with React, Node.js, and Socket.IO for secure, hacker-themed collaborative development.
 

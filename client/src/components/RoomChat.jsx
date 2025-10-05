@@ -23,20 +23,29 @@ function RoomChat({ socket, user, participants, roomId }) {
 
     // Listen for incoming chat messages
     socket.on("chat-message", (messageData) => {
-      setMessages(prev => [...prev, {
-        id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        ...messageData,
-        timestamp: new Date().toLocaleTimeString('en-US', { hour12: false })
-      }]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          ...messageData,
+          timestamp: new Date().toLocaleTimeString("en-US", { hour12: false }),
+        },
+      ]);
     });
 
     // Listen for chat history when joining room
     socket.on("chat-history", (chatHistory) => {
-      setMessages(chatHistory.map(msg => ({
-        ...msg,
-        id: msg.id || `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-        timestamp: msg.timestamp || new Date().toLocaleTimeString('en-US', { hour12: false })
-      })));
+      setMessages(
+        chatHistory.map((msg) => ({
+          ...msg,
+          id:
+            msg.id ||
+            `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          timestamp:
+            msg.timestamp ||
+            new Date().toLocaleTimeString("en-US", { hour12: false }),
+        }))
+      );
     });
 
     return () => {
@@ -55,19 +64,19 @@ function RoomChat({ socket, user, participants, roomId }) {
       userId: user.id,
       username: user.username,
       message: newMessage.trim(),
-      timestamp: new Date().toLocaleTimeString('en-US', { hour12: false })
+      timestamp: new Date().toLocaleTimeString("en-US", { hour12: false }),
     };
 
     // Emit to server
     socket.emit("send-chat-message", messageData);
-    
+
     // Clear input
     setNewMessage("");
   };
 
   // Handle Enter key
   const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       sendMessage(e);
     }
@@ -94,14 +103,14 @@ function RoomChat({ socket, user, participants, roomId }) {
         <MessageSquare className="w-5 h-5" />
         {messages.length > 0 && (
           <span className="absolute -top-2 -right-2 bg-red-400 text-black text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
-            {messages.length > 99 ? '99+' : messages.length}
+            {messages.length > 99 ? "99+" : messages.length}
           </span>
         )}
       </button>
 
       {/* Chat Panel */}
       {isVisible && (
-        <div 
+        <div
           className="fixed bottom-20 left-4 z-50 w-80 h-96 bg-black border border-green-400/50 shadow-2xl"
           style={{ fontFamily: "'Courier New', Consolas, Monaco, monospace" }}
         >
@@ -110,11 +119,15 @@ function RoomChat({ socket, user, participants, roomId }) {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <MessageSquare className="w-4 h-4 text-green-400" />
-                <span className="text-green-400 text-sm font-bold">ROOM_CHAT</span>
+                <span className="text-green-400 text-sm font-bold">
+                  ROOM_CHAT
+                </span>
               </div>
               <div className="flex items-center gap-2 text-xs">
                 <Users className="w-3 h-3 text-green-400/60" />
-                <span className="text-green-400/60">{participants.length} ONLINE</span>
+                <span className="text-green-400/60">
+                  {participants.length} ONLINE
+                </span>
                 <button
                   onClick={() => setIsVisible(false)}
                   className="ml-2 text-green-400/60 hover:text-red-400 transition-colors"
@@ -141,11 +154,11 @@ function RoomChat({ socket, user, participants, roomId }) {
                       <span className="text-green-400/60 shrink-0">
                         [{msg.timestamp}]
                       </span>
-                      <span 
+                      <span
                         className={`shrink-0 font-bold ${
-                          msg.userId === user.id 
-                            ? 'text-cyan-400' 
-                            : 'text-green-400'
+                          msg.userId === user.id
+                            ? "text-cyan-400"
+                            : "text-green-400"
                         }`}
                       >
                         {msg.username}:
@@ -172,7 +185,9 @@ function RoomChat({ socket, user, participants, roomId }) {
                 onKeyPress={handleKeyPress}
                 placeholder="Type message..."
                 className="flex-1 bg-black border border-green-400/30 text-green-400 text-xs px-2 py-1 focus:outline-none focus:border-green-400 placeholder-green-400/40"
-                style={{ fontFamily: "'Courier New', Consolas, Monaco, monospace" }}
+                style={{
+                  fontFamily: "'Courier New', Consolas, Monaco, monospace",
+                }}
                 maxLength={500}
               />
               <button

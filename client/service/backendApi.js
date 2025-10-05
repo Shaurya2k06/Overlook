@@ -3,7 +3,7 @@ import { getApiUrl, getSocketUrl } from "../src/config/environment.js";
 
 // Create axios instance with configuration
 const fetchData = axios.create({
-  baseURL: getApiUrl("/api"),
+  baseURL: "http://localhost:3001/api",
   withCredentials: true,
 });
 
